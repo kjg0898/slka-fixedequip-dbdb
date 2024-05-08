@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <appender name="RETRY_FAILS" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>logs/retry_fails.log</file>
+        <encoder>
+            <pattern>%d{"yyyy-MM-dd HH:mm:ss"} [%thread] %-5level %logger{36} - %msg%n</pattern>
+        </encoder>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>logs/retry_fails.%d{yyyy-MM-dd}.log</fileNamePattern>
+            <maxHistory>7</maxHistory>
+        </rollingPolicy>
+    </appender>
+
+    <!-- 수정: 재시도 실패 로그에 특화된 로거 설정 (예: DataTransferService 내 특정 메서드) -->
+    <logger name="org.neighbor21.slkaFixedEquipDBDB.service.DataTransferService" level="error" additivity="false">
+        <appender-ref ref="RETRY_FAILS" />
+    </logger>
+
+    <!-- 수정: STDOUT 애펜더 참조 -->
+    <root level="info">
+        <appender-ref ref="STDOUT" />
+    </root>
+</configuration>
