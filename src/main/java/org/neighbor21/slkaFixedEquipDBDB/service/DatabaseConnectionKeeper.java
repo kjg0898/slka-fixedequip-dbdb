@@ -39,12 +39,12 @@ public class DatabaseConnectionKeeper {
 
     @Scheduled(fixedDelay = 30000) // 300,000밀리초 (5분) 마다 실행
     public void keepAlivePrimaryDataSource() {
-        keepAliveConnection(primaryDataSource, "primary");
+        keepAliveConnection(primaryDataSource, "VDS");
     }
 
     @Scheduled(fixedDelay = 30000) // 동일하게 5분마다 실행
     public void keepAliveSecondaryDataSource() {
-        keepAliveConnection(secondaryDataSource, "secondary");
+        keepAliveConnection(secondaryDataSource, "SRLK");
     }
 
     private void keepAliveConnection(DataSource dataSource, String dataSourceName) {
