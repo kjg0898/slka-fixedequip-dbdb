@@ -1,5 +1,6 @@
 package org.neighbor21.slkaFixedEquipDBDB.service;
 
+import lombok.Getter;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -17,11 +18,10 @@ import java.time.LocalDateTime;
  */
 
 @Service
-public class LastQueriedTimeService { private LocalDateTime lastQueriedDateTime = LocalDateTime.now().minusMinutes(5); // 초기화
+@Getter
+public class LastQueriedTimeService {
+    private LocalDateTime lastQueriedDateTime = LocalDateTime.now().minusMinutes(5); // 초기화
 
-    public LocalDateTime getLastQueriedDateTime() {
-        return lastQueriedDateTime;
-    }
 
     public void updateLastQueriedDateTime(LocalDateTime dateTime) {
         this.lastQueriedDateTime = dateTime;

@@ -45,9 +45,9 @@ public class SaveVdsEntity {
         List<Tms_Tracking> newDataList = tmsTrackingRepository.findNewDataSince(lastQueried);
         if (!newDataList.isEmpty()) {
             logger.info("{} 시간 이후의 데이터를 조회 후 변환 처리", lastQueried);
-            logger.info("조회한 데이터 내용과 크기 : {},{}",newDataList, newDataList.size());
+            logger.info("조회한 데이터 내용과 크기 : {},{}", newDataList, newDataList.size());
             // 새로운 데이터가 있을 경우, 데이터 변환 및 저장 처리
-           dataTransferService.transferData(newDataList); // DataTransferService에 새로운 데이터를 전달하여 처리하도록 수정
+            dataTransferService.transferData(newDataList); // DataTransferService에 새로운 데이터를 전달하여 처리하도록 수정
         } else {
             logger.info("No new data found");
         }

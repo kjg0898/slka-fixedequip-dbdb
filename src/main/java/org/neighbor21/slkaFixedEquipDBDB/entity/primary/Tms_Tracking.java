@@ -3,6 +3,7 @@ package org.neighbor21.slkaFixedEquipDBDB.entity.primary;
 import jakarta.persistence.Column;
 import jakarta.persistence.EmbeddedId;
 import jakarta.persistence.Entity;
+import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.Setter;
 import org.neighbor21.slkaFixedEquipDBDB.entity.compositekey.Tms_TrackingKey;
@@ -23,6 +24,7 @@ import org.neighbor21.slkaFixedEquipDBDB.entity.compositekey.Tms_TrackingKey;
 @Entity
 @Getter
 @Setter
+@Table(name = "Tms_Tracking")
 public class Tms_Tracking {
 
     //미리 지정한 복합키 통행일시,카메라 고유 아이디, 통행차량 고유번호(번호판x)

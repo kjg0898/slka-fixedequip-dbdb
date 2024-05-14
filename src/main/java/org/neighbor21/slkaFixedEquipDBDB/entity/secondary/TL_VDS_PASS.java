@@ -3,8 +3,10 @@ package org.neighbor21.slkaFixedEquipDBDB.entity.secondary;
 import jakarta.persistence.Column;
 import jakarta.persistence.EmbeddedId;
 import jakarta.persistence.Entity;
+import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.Setter;
+import org.hibernate.annotations.BatchSize;
 import org.neighbor21.slkaFixedEquipDBDB.entity.compositekey.TL_VDS_PASSKey;
 
 import java.math.BigDecimal;
@@ -24,6 +26,8 @@ import java.math.BigDecimal;
 @Entity
 @Getter
 @Setter
+@Table(name = "TL_VDS_PASS")
+@BatchSize(size = 100)
 public class TL_VDS_PASS {
 
     //미리 지정한 복합키 통행일시,카메라 아이디, 통행차량 아이디

@@ -20,8 +20,6 @@ import org.neighbor21.slkaFixedEquipDBDB.dto.TL_VDS_PASSKeyDto;
 import org.neighbor21.slkaFixedEquipDBDB.entity.compositekey.TL_VDS_PASSKey;
 import org.neighbor21.slkaFixedEquipDBDB.entity.primary.Tms_Tracking;
 import org.neighbor21.slkaFixedEquipDBDB.entity.secondary.TL_VDS_PASS;
-import org.neighbor21.slkaFixedEquipDBDB.jpareposit.primary.TmsTrackingReposit;
-import org.neighbor21.slkaFixedEquipDBDB.jpareposit.secondary.TlVdsPassReposit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -37,23 +35,19 @@ public class DataTransferService {
     private static final Logger logger = LoggerFactory.getLogger(DataTransferService.class);
     private static final Logger retryLogger = LoggerFactory.getLogger("RetryLogger");
 
-    private final TmsTrackingReposit tmsTrackingReposit;
-    private final TlVdsPassReposit tlVdsPassReposit;
-    private final LastQueriedTimeService lastQueriedTime;
+    private final BatchService batchService;
 
     @PersistenceContext
     private EntityManager entityManager;
 
     @Autowired
-    public DataTransferService(TmsTrackingReposit tmsTrackingReposit, TlVdsPassReposit tlVdsPassReposit, LastQueriedTimeService lastQueriedTime) {
-        this.tmsTrackingReposit = tmsTrackingReposit;
-        this.tlVdsPassReposit = tlVdsPassReposit;
-        this.lastQueriedTime = lastQueriedTime;
+    public DataTransferService( BatchService batchService) {
+        this.batchService = batchService;
     }
 
     @Transactional //메서드가 트랜잭션이 되도록 보장 (트랜잭션 내 연산은 모두 독립적으로 이루어지며 오류가 났을때 해당 트랙잭션은 취소되어 원래대로 돌아간다)
     public void transferData(List<Tms_Tracking> newDataList) {
-        int batchSize = 1000;
+        int batchSize = 100;
         for (int i = 0; i < newDataList.size(); i++) {
             Tms_Tracking sourceData = newDataList.get(i);
             try {
@@ -63,18 +57,22 @@ public class DataTransferService {
                 TL_VDS_PASSDto dto = convertEntityToDTO(sourceData);
                 TL_VDS_PASS targetData = convertDtoToEntity(dto);
                 logger.info("Data to be loaded into TL_VDS_PASS table: {}", targetData);
-                entityManager.persist(targetData);
+                //entityManager.persist(targetData);
+                batchService.batchInsertWithRetry(List.of(targetData)); // Using BatchService for insertion
 
-                if (i % batchSize == 0 || i == newDataList.size() - 1) {
+                if (i % batchSize == 0 && i > 0) {
                     entityManager.flush();
                     entityManager.clear();
                 }
             } catch (Exception e) {
                 logger.error("Initial transfer failed for tracking PK {}, attempting retry...", sourceData.getTmsTrackingPK());
-                retryFailedData(sourceData, 0); // Start retries with count 0
+                retryFailedData(sourceData, 0);
             }
         }
+        entityManager.flush();
+        entityManager.clear();
     }
+
     private boolean validateData(Tms_Tracking sourceData) {
         // 예: 속도가 음수이거나 특정 범위를 초과하는지 검사
         if (sourceData.getVelocity() < 0 || sourceData.getVelocity() > 200) {
@@ -84,9 +82,7 @@ public class DataTransferService {
         // 추가적인 유효성 검사 로직 구현
         return true;
     }
-    private void logFailedData(Tms_Tracking failedData) {
-        logger.error("Failed to transfer data for tracking PK {}: {}", failedData.getTmsTrackingPK(), failedData);
-    }
+
 
     private void retryFailedData(Tms_Tracking failedData, int retryCount) {
         if (retryCount > 3) { // Maximum retries limit set to 3
@@ -98,12 +94,13 @@ public class DataTransferService {
             // Retry logic, attempt to convert and persist the data again
             TL_VDS_PASSDto dto = convertEntityToDTO(failedData);
             TL_VDS_PASS retryData = convertDtoToEntity(dto);
-            entityManager.persist(retryData);
-            entityManager.flush();
-            entityManager.clear();
-            logger.info("Retry successful for tracking PK {}", failedData.getTmsTrackingPK());
+            batchService.batchInsertWithRetry(List.of(retryData)); // Using BatchService for retry
+           // entityManager.persist(retryData);
+           // entityManager.flush();
+           // entityManager.clear();
+            retryLogger.info("Retry successful for tracking PK {}", failedData.getTmsTrackingPK());
         } catch (Exception retryException) {
-            logger.error("Retry failed for tracking PK {}: {}, Attempt: {}", failedData.getTmsTrackingPK(), failedData, retryCount, retryException);
+            retryLogger.error("Retry failed for tracking PK {}: {}, Attempt: {}", failedData.getTmsTrackingPK(), failedData, retryCount, retryException);
             retryFailedData(failedData, retryCount + 1); // Recursive call to retry, incrementing the retry count
         }
     }

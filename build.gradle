@@ -30,15 +30,25 @@ dependencies {
     compileOnly 'org.projectlombok:lombok'
     annotationProcessor 'org.projectlombok:lombok'
 
+    //test
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
+
+    //spring
     implementation 'org.springframework.boot:spring-boot-starter-web'
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+
+    //batch
+    implementation 'org.springframework.boot:spring-boot-starter-batch'
 
     // postgresql
     runtimeOnly 'org.postgresql:postgresql'
 
     //  Logback 구현체 추가
     implementation 'ch.qos.logback:logback-classic:1.4.14'
+
+    //Resilience4j (지수 백오프)(재시도 할때 사용)
+    implementation 'io.github.resilience4j:resilience4j-core:1.7.0'
+    implementation 'io.github.resilience4j:resilience4j-retry:1.7.0'
 
 }
 
