@@ -13,7 +13,7 @@ import java.math.BigDecimal;
  * fileName       : TL_VDS_PASSDto.java
  * author         : kjg08
  * date           : 24. 4. 17.
- * description    :
+ * description    : 적재할 테이블 의 dto
  * ===========================================================
  * DATE              AUTHOR             NOTE
  * -----------------------------------------------------------

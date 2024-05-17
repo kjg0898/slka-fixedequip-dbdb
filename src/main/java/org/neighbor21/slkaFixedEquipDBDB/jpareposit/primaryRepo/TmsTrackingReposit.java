@@ -1,4 +1,4 @@
-package org.neighbor21.slkaFixedEquipDBDB.jpareposit.primary;
+package org.neighbor21.slkaFixedEquipDBDB.jpareposit.primaryRepo;
 
 import org.neighbor21.slkaFixedEquipDBDB.entity.compositekey.Tms_TrackingKey;
 import org.neighbor21.slkaFixedEquipDBDB.entity.primary.Tms_Tracking;

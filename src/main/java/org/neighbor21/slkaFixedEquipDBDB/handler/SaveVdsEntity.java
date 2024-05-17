@@ -1,7 +1,7 @@
 package org.neighbor21.slkaFixedEquipDBDB.handler;
 
 import org.neighbor21.slkaFixedEquipDBDB.entity.primary.Tms_Tracking;
-import org.neighbor21.slkaFixedEquipDBDB.jpareposit.primary.TmsTrackingReposit;
+import org.neighbor21.slkaFixedEquipDBDB.jpareposit.primaryRepo.TmsTrackingReposit;
 import org.neighbor21.slkaFixedEquipDBDB.service.DataTransferService;
 import org.neighbor21.slkaFixedEquipDBDB.service.LastQueriedTimeService;
 import org.slf4j.Logger;
@@ -14,22 +14,23 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 /**
- * packageName    : org.neighbor21.slkafixedequipdbdb.handler
- * fileName       : DataFetchHendler.java
+ * packageName    : org.neighbor21.slkaFixedEquipDBDB.handler
+ * fileName       : SaveVdsEntity.java
  * author         : kjg08
  * date           : 2024-04-08
- * description    : 5분간격으로 데이터 조회 후 파싱 처리
+ * description    : 5분 간격으로 새로운 데이터를 조회하고 처리하는 핸들러 클래스. 이 클래스는 정기적으로 데이터베이스에서 새로운 데이터를 조회하여 변환 및 저장 작업을 수행합니다.
  * ===========================================================
  * DATE              AUTHOR             NOTE
  * -----------------------------------------------------------
  * 2024-04-08        kjg08           최초 생성
  */
-@Component
+
+@Component // Spring의 컴포넌트 스캔 메커니즘에 의해 빈으로 등록됨을 나타냄
 public class SaveVdsEntity {
+
     private static final Logger logger = LoggerFactory.getLogger(SaveVdsEntity.class);
 
-
-    @Autowired//필요한 의존 객체의 “타입"에 해당하는 빈을 찾아 주입한다.
+    @Autowired // 필요한 의존 객체의 “타입"에 해당하는 빈을 찾아 주입
     private TmsTrackingReposit tmsTrackingRepository;
 
     @Autowired
@@ -38,19 +39,23 @@ public class SaveVdsEntity {
     @Autowired
     private DataTransferService dataTransferService;
 
-    //@EnableScheduling 어노테이션은 스프링의 스케줄링 기능을 활성화하는 데 사용됩니다. 이 어노테이션이 메인 클래스에 추가되면, 스프링 부트는 애플리케이션 내에서 @Scheduled 어노테이션이 붙은 메소드를 찾아 해당 메소드를 정의된 스케줄에 따라 명시된 시간을 주기로 자동으로 실행합니다
-    @Scheduled(fixedRate = 295000) // 300000 milliseconds = 5 minutes 이지만 실제 처리되는 속도 고려하여 295000 초로 설정
+    /**
+     * 일정한 간격(5분)으로 새로운 데이터를 조회하여 처리하는 메소드.
+     * 마지막 조회 시간 이후의 데이터를 조회하여 변환 및 저장 작업을 수행함.
+     */
+    @Scheduled(fixedRate = 290000) // 300000 milliseconds = 5 minutes 이지만 실제 처리 속도를 고려하여 290000 milliseconds로 설정
     public void fetchNewData() {
-        LocalDateTime lastQueried = lastQueriedService.getLastQueriedDateTime();
-        List<Tms_Tracking> newDataList = tmsTrackingRepository.findNewDataSince(lastQueried);
+        LocalDateTime lastQueried = lastQueriedService.getLastQueriedDateTime(); // 마지막 조회 시간 가져오기
+        List<Tms_Tracking> newDataList = tmsTrackingRepository.findNewDataSince(lastQueried); // 마지막 조회 시간 이후의 데이터 조회
+
         if (!newDataList.isEmpty()) {
             logger.info("{} 시간 이후의 데이터를 조회 후 변환 처리", lastQueried);
-            logger.info("조회한 데이터 내용과 크기 : {},{}", newDataList, newDataList.size());
             // 새로운 데이터가 있을 경우, 데이터 변환 및 저장 처리
-            dataTransferService.transferData(newDataList); // DataTransferService에 새로운 데이터를 전달하여 처리하도록 수정
+            dataTransferService.transferData(newDataList); // DataTransferService에 새로운 데이터를 전달하여 처리
         } else {
             logger.info("No new data found");
         }
+
         // 마지막 조회 시간 업데이트
         lastQueriedService.updateLastQueriedDateTime(LocalDateTime.now());
     }

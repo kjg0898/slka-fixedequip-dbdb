@@ -12,7 +12,7 @@ import java.sql.Timestamp;
  * fileName       : TL_VDS_PASSKeyDto.java
  * author         : kjg08
  * date           : 24. 4. 17.
- * description    :
+ * description    : 적재할 테이블 의 복합키
  * ===========================================================
  * DATE              AUTHOR             NOTE
  * -----------------------------------------------------------

@@ -26,8 +26,8 @@ import java.math.BigDecimal;
 @Entity
 @Getter
 @Setter
-@Table(name = "TL_VDS_PASS")
-@BatchSize(size = 100)
+@Table(name = "TL_VDS_PASS", schema = "srlk")
+@BatchSize(size = 1000)
 public class TL_VDS_PASS {
 
     //미리 지정한 복합키 통행일시,카메라 아이디, 통행차량 아이디

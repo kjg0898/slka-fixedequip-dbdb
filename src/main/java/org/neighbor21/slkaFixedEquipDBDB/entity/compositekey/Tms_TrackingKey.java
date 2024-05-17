@@ -14,7 +14,7 @@ import java.sql.Timestamp;
  * fileName       : Tms_TrackingKey.java
  * author         : kjg08
  * date           : 2024-04-05
- * description    : @id 어노테이션으로는 하나의 pk 밖에 지정할수 없으므로 대신에 복합 pk 구조를 미리 정의해둚
+ * description    : 가져올 테이블 / @id 어노테이션으로는 하나의 pk 밖에 지정할수 없으므로 대신에 복합 pk 구조를 미리 정의해둚
  * ===========================================================
  * DATE              AUTHOR             NOTE
  * -----------------------------------------------------------
@@ -40,10 +40,10 @@ public class Tms_TrackingKey implements Serializable {
     public Tms_TrackingKey() {
     }
 
-    // Constructor
-    public Tms_TrackingKey(Timestamp timeStamp, int camID, String trackingID) {
-        this.timeStamp = timeStamp;
-        this.camID = camID;
-        this.trackingID = trackingID;
-    }
+//    // Constructor
+//    public Tms_TrackingKey(Timestamp timeStamp, int camID, String trackingID) {
+//        this.timeStamp = timeStamp;
+//        this.camID = camID;
+//        this.trackingID = trackingID;
+//    }
 }

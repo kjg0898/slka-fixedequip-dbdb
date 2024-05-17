@@ -24,7 +24,7 @@ import org.neighbor21.slkaFixedEquipDBDB.entity.compositekey.Tms_TrackingKey;
 @Entity
 @Getter
 @Setter
-@Table(name = "Tms_Tracking")
+@Table(name = "Tms_Tracking", schema = "srlk")
 public class Tms_Tracking {
 
     //미리 지정한 복합키 통행일시,카메라 고유 아이디, 통행차량 고유번호(번호판x)
@@ -61,7 +61,7 @@ public class Tms_Tracking {
 
     //이벤트
     @Column(name = "EventID")
-    private int EventID;
+    private Integer EventID;
 
     //이벤트 설명
     @Column(name = "EventName")

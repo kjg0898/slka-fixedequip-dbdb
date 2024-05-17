@@ -14,7 +14,7 @@ import java.sql.Timestamp;
  * fileName       : CompositeKey.java
  * author         : kjg08
  * date           : 2024-04-05
- * description    : @id 어노테이션으로는 하나의 pk 밖에 지정할수 없으므로 대신에 복합 pk 구조를 미리 정의해둚
+ * description    : 적재할 테이블/@id 어노테이션으로는 하나의 pk 밖에 지정할수 없으므로 대신에 복합 pk 구조를 미리 정의해둚
  * ===========================================================
  * DATE              AUTHOR             NOTE
  * -----------------------------------------------------------
@@ -42,12 +42,12 @@ public class TL_VDS_PASSKey implements Serializable {
     public TL_VDS_PASSKey() {
     }
 
-    // Constructor
-    public TL_VDS_PASSKey(Timestamp PASS_DT, String CAMERA_ID, String PASSVHCL_ID) {
-        this.PASS_DT = PASS_DT;
-        this.CAMERA_ID = CAMERA_ID;
-        this.PASSVHCL_ID = PASSVHCL_ID;
-    }
+//    // Constructor
+//    public TL_VDS_PASSKey(Timestamp PASS_DT, String CAMERA_ID, String PASSVHCL_ID) {
+//        this.PASS_DT = PASS_DT;
+//        this.CAMERA_ID = CAMERA_ID;
+//        this.PASSVHCL_ID = PASSVHCL_ID;
+//    }
 }
 
 

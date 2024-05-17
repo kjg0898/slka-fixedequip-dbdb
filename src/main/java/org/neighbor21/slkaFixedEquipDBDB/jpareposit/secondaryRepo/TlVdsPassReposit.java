@@ -1,4 +1,4 @@
-package org.neighbor21.slkaFixedEquipDBDB.jpareposit.secondary;
+package org.neighbor21.slkaFixedEquipDBDB.jpareposit.secondaryRepo;
 
 import org.neighbor21.slkaFixedEquipDBDB.entity.compositekey.TL_VDS_PASSKey;
 import org.neighbor21.slkaFixedEquipDBDB.entity.secondary.TL_VDS_PASS;

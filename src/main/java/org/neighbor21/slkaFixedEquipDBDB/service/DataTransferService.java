@@ -1,16 +1,5 @@
 package org.neighbor21.slkaFixedEquipDBDB.service;
 
-/**
- * packageName    : org.neighbor21.slkafixedequipdbdb.service
- * fileName       : DataTransferService.java
- * author         : kjg08
- * date           : 24. 4. 8.
- * description    : primary 테이블에서 secondary 테이블로 옮기기 위해 타입 변환 및 파싱 후 적재하는 로직
- * ===========================================================
- * DATE              AUTHOR             NOTE
- * -----------------------------------------------------------
- * 24. 4. 8.        kjg08           최초 생성
- */
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
@@ -29,50 +18,87 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.util.List;
 
-@Service
-public class DataTransferService {
+/**
+ * packageName    : org.neighbor21.slkaFixedEquipDBDB.service
+ * fileName       : DataTransferService.java
+ * author         : kjg08
+ * date           : 2024-04-08
+ * description    : Primary 테이블에서 Secondary 테이블로 데이터를 옮기기 위해 타입 변환 및 파싱 후 적재하는 로직을 담당하는 서비스 클래스.
+ * ===========================================================
+ * DATE              AUTHOR             NOTE
+ * -----------------------------------------------------------
+ * 2024-04-08        kjg08           최초 생성
+ */
 
+@Service // Spring의 서비스 컴포넌트로 등록
+public class DataTransferService {
     private static final Logger logger = LoggerFactory.getLogger(DataTransferService.class);
     private static final Logger retryLogger = LoggerFactory.getLogger("RetryLogger");
-
     private final BatchService batchService;
 
-    @PersistenceContext
-    private EntityManager entityManager;
+    @PersistenceContext(unitName = "secondary") // 특정 영속성 유닛을 사용하는 EntityManager 주입
+    private EntityManager secondaryEntityManager;
 
-    @Autowired
-    public DataTransferService( BatchService batchService) {
+    @Autowired // 필요한 의존 객체를 주입받음
+    public DataTransferService(BatchService batchService) {
         this.batchService = batchService;
     }
 
-    @Transactional //메서드가 트랜잭션이 되도록 보장 (트랜잭션 내 연산은 모두 독립적으로 이루어지며 오류가 났을때 해당 트랙잭션은 취소되어 원래대로 돌아간다)
+    /**
+     * Primary 데이터베이스에서 Secondary 데이터베이스로 데이터를 전송하는 메소드.
+     *
+     * @param newDataList 전송할 데이터 리스트
+     */
+    @Transactional("secondaryTransactionManager") // 트랜잭션 관리 설정
     public void transferData(List<Tms_Tracking> newDataList) {
-        int batchSize = 100;
+        long startTime = System.currentTimeMillis(); // 시작 시간
+        int totalRecords = newDataList.size();
+        logger.info("Starting data transfer for {} records", totalRecords);
+        int lastLoggedPercentage = 0;
+        int batchSize = 1000;
+
         for (int i = 0; i < newDataList.size(); i++) {
             Tms_Tracking sourceData = newDataList.get(i);
             try {
                 if (!validateData(sourceData)) {
-                    continue;  // Skip processing if data validation fails
+                    continue;
                 }
                 TL_VDS_PASSDto dto = convertEntityToDTO(sourceData);
                 TL_VDS_PASS targetData = convertDtoToEntity(dto);
-                logger.info("Data to be loaded into TL_VDS_PASS table: {}", targetData);
-                //entityManager.persist(targetData);
-                batchService.batchInsertWithRetry(List.of(targetData)); // Using BatchService for insertion
+                batchService.batchInsertWithRetry(List.of(targetData));
 
                 if (i % batchSize == 0 && i > 0) {
-                    entityManager.flush();
-                    entityManager.clear();
+                    secondaryEntityManager.flush();
+                    secondaryEntityManager.clear();
                 }
             } catch (Exception e) {
                 logger.error("Initial transfer failed for tracking PK {}, attempting retry...", sourceData.getTmsTrackingPK());
                 retryFailedData(sourceData, 0);
             }
+
+            // 진행 상황 퍼센티지 계산 및 로그 기록
+            int progressPercentage = ((i + 1) * 100) / totalRecords;
+            if (progressPercentage >= lastLoggedPercentage + 10) { // 10%마다 로그 기록
+                logger.info("Progress: {}%", progressPercentage);
+                lastLoggedPercentage = progressPercentage;
+            }
         }
-        entityManager.flush();
-        entityManager.clear();
+
+        secondaryEntityManager.flush();
+        secondaryEntityManager.clear();
+
+        long endTime = System.currentTimeMillis(); // 종료 시간
+        long duration = endTime - startTime; // 소요 시간 (밀리초)
+
+        logger.info("Data transfer completed for {} records in {} ms", totalRecords, duration);
     }
 
+    /**
+     * 주어진 데이터를 유효성 검사하는 메소드.
+     *
+     * @param sourceData 유효성 검사할 데이터
+     * @return 유효성 검사 결과 (유효하면 true, 아니면 false)
+     */
     private boolean validateData(Tms_Tracking sourceData) {
         // 예: 속도가 음수이거나 특정 범위를 초과하는지 검사
         if (sourceData.getVelocity() < 0 || sourceData.getVelocity() > 200) {
@@ -83,28 +109,35 @@ public class DataTransferService {
         return true;
     }
 
-
+    /**
+     * 데이터 전송 실패 시 재시도하는 메소드.
+     *
+     * @param failedData 전송에 실패한 데이터
+     * @param retryCount 현재 재시도 횟수
+     */
     private void retryFailedData(Tms_Tracking failedData, int retryCount) {
-        if (retryCount > 3) { // Maximum retries limit set to 3
+        if (retryCount > 3) {
             logger.error("Max retries exceeded for tracking PK {}: {}", failedData.getTmsTrackingPK(), failedData);
-            return; // Stop retrying after 3 attempts
+            return;
         }
 
         try {
-            // Retry logic, attempt to convert and persist the data again
             TL_VDS_PASSDto dto = convertEntityToDTO(failedData);
             TL_VDS_PASS retryData = convertDtoToEntity(dto);
-            batchService.batchInsertWithRetry(List.of(retryData)); // Using BatchService for retry
-           // entityManager.persist(retryData);
-           // entityManager.flush();
-           // entityManager.clear();
+            batchService.batchInsertWithRetry(List.of(retryData));
             retryLogger.info("Retry successful for tracking PK {}", failedData.getTmsTrackingPK());
         } catch (Exception retryException) {
             retryLogger.error("Retry failed for tracking PK {}: {}, Attempt: {}", failedData.getTmsTrackingPK(), failedData, retryCount, retryException);
-            retryFailedData(failedData, retryCount + 1); // Recursive call to retry, incrementing the retry count
+            retryFailedData(failedData, retryCount + 1);
         }
     }
 
+    /**
+     * Tms_Tracking 엔티티를 TL_VDS_PASSDto로 변환하는 메소드.
+     *
+     * @param entity 변환할 엔티티
+     * @return 변환된 DTO 객체
+     */
     private TL_VDS_PASSDto convertEntityToDTO(Tms_Tracking entity) {
 
 
@@ -142,6 +175,12 @@ public class DataTransferService {
         return dto;
     }
 
+    /**
+     * TL_VDS_PASSDto를 TL_VDS_PASS 엔티티로 변환하는 메소드.
+     *
+     * @param dto 변환할 DTO
+     * @return 변환된 엔티티 객체
+     */
     private TL_VDS_PASS convertDtoToEntity(TL_VDS_PASSDto dto) {
         TL_VDS_PASS entity = new TL_VDS_PASS();
         TL_VDS_PASSKey key = new TL_VDS_PASSKey();
