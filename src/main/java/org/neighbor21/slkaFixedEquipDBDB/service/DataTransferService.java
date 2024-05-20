@@ -12,6 +12,8 @@ import org.neighbor21.slkaFixedEquipDBDB.jpareposit.secondaryRepo.TlVdsPassRepos
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.orm.jpa.JpaSystemException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -183,10 +185,15 @@ public class DataTransferService {
         try {
             TL_VDS_PASSDto dto = convertEntityToDTO(failedData);
             TL_VDS_PASS retryData = convertDtoToEntity(dto);
-            batchService.batchInsertWithRetry(List.of(retryData)/*, Set.of()*/); // 재시도 시 기존 키가 없는 상태로 처리 <<// 중복 데이터 키 조회 및 필터링 << 실 데이터에서는 중복으로 키값이 들어올 경우가 없다고 판단하여 주석처리함.
+            batchService.batchInsertWithRetry(List.of(retryData));
             retryLogger.info("Retry successful for tracking PK {}", failedData.getTmsTrackingPK());
-        } catch (Exception retryException) {
-            retryLogger.error("Retry failed for tracking PK {}: {}, Attempt: {}", failedData.getTmsTrackingPK(), failedData, retryCount, retryException);
+        } catch (DataIntegrityViolationException e) {
+            logger.error("Retry {} failed for tracking PK {} due to constraint violation, skipping record. Error: {}", retryCount, failedData.getTmsTrackingPK(), e.getMessage());
+        } catch (JpaSystemException e) {
+            retryLogger.error("Retry {} failed for tracking PK {}, attempting retry again... Error: {}", retryCount, failedData.getTmsTrackingPK(), e.getMessage());
+            retryFailedData(failedData, retryCount + 1);
+        } catch (Exception e) {
+            retryLogger.error("Retry {} failed for tracking PK {}, attempting retry again... Error: ", retryCount, failedData.getTmsTrackingPK(), e);
             retryFailedData(failedData, retryCount + 1);
         }
     }
