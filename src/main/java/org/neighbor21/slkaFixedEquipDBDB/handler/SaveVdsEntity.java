@@ -45,13 +45,17 @@ public class SaveVdsEntity {
      */
     @Scheduled(fixedRate = 290000) // 300000 milliseconds = 5 minutes 이지만 실제 처리 속도를 고려하여 290000 milliseconds로 설정
     public void fetchNewData() {
+        long programeStartTime = System.currentTimeMillis();
         LocalDateTime lastQueried = lastQueriedService.getLastQueriedDateTime(); // 마지막 조회 시간 가져오기
         List<Tms_Tracking> newDataList = tmsTrackingRepository.findNewDataSince(lastQueried); // 마지막 조회 시간 이후의 데이터 조회
+
 
         if (!newDataList.isEmpty()) {
             logger.info("{} 시간 이후의 데이터를 조회 후 변환 처리", lastQueried);
             // 새로운 데이터가 있을 경우, 데이터 변환 및 저장 처리
             dataTransferService.transferData(newDataList); // DataTransferService에 새로운 데이터를 전달하여 처리
+            long endTime = System.currentTimeMillis();
+            logger.info("all process complete time {} ms", endTime - programeStartTime);
         } else {
             logger.info("No new data found");
         }

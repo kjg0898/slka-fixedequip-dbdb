@@ -1,6 +1,5 @@
 package org.neighbor21.slkaFixedEquipDBDB.service;
 
-
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import org.neighbor21.slkaFixedEquipDBDB.Util.ParshingUtil;
@@ -9,6 +8,7 @@ import org.neighbor21.slkaFixedEquipDBDB.dto.TL_VDS_PASSKeyDto;
 import org.neighbor21.slkaFixedEquipDBDB.entity.compositekey.TL_VDS_PASSKey;
 import org.neighbor21.slkaFixedEquipDBDB.entity.primary.Tms_Tracking;
 import org.neighbor21.slkaFixedEquipDBDB.entity.secondary.TL_VDS_PASS;
+import org.neighbor21.slkaFixedEquipDBDB.jpareposit.secondaryRepo.TlVdsPassReposit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,6 +16,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -29,7 +30,6 @@ import java.util.List;
  * -----------------------------------------------------------
  * 2024-04-08        kjg08           최초 생성
  */
-
 @Service // Spring의 서비스 컴포넌트로 등록
 public class DataTransferService {
     private static final Logger logger = LoggerFactory.getLogger(DataTransferService.class);
@@ -40,7 +40,7 @@ public class DataTransferService {
     private EntityManager secondaryEntityManager;
 
     @Autowired // 필요한 의존 객체를 주입받음
-    public DataTransferService(BatchService batchService) {
+    public DataTransferService(BatchService batchService, TlVdsPassReposit tlVdsPassReposit) {
         this.batchService = batchService;
     }
 
@@ -57,24 +57,59 @@ public class DataTransferService {
         int lastLoggedPercentage = 0;
         int batchSize = 1000;
 
+        List<TL_VDS_PASS> batchList = new ArrayList<>();
+
+        // 시간 측정 변수 초기화
+        long totalConversionTime = 0;
+        long totalBatchInsertTime = 0;
+        long totalRetryTime = 0;
+        long totalRecordTime = 0;
+        long totalFlushTime = 0;
+        long totalValidationTime = 0;
+
         for (int i = 0; i < newDataList.size(); i++) {
             Tms_Tracking sourceData = newDataList.get(i);
+            long recordStartTime = System.currentTimeMillis();
             try {
+                long validationStartTime = System.currentTimeMillis();
                 if (!validateData(sourceData)) {
                     continue;
                 }
+                long validationEndTime = System.currentTimeMillis();
+                totalValidationTime += (validationEndTime - validationStartTime);
+
+                long conversionStartTime = System.currentTimeMillis();
                 TL_VDS_PASSDto dto = convertEntityToDTO(sourceData);
                 TL_VDS_PASS targetData = convertDtoToEntity(dto);
-                batchService.batchInsertWithRetry(List.of(targetData));
+                batchList.add(targetData);
+                long conversionEndTime = System.currentTimeMillis();
+                totalConversionTime += (conversionEndTime - conversionStartTime);
 
-                if (i % batchSize == 0 && i > 0) {
-                    secondaryEntityManager.flush();
-                    secondaryEntityManager.clear();
+                if (batchList.size() == batchSize) {
+                    // 중복 데이터 키 조회 및 필터링 << 실 데이터에서는 중복으로 키값이 들어올 경우가 없다고 판단하여 주석처리함.
+//
+//                    Set<TL_VDS_PASSKey> keysToCheck = batchList.stream()
+//                            .map(TL_VDS_PASS::getTlVdsPassPK)
+//                            .collect(Collectors.toSet());
+
+//                    Set<TL_VDS_PASSKey> existingKeys = tlVdsPassReposit.findExistingKeys(keysToCheck);
+
+                    long batchInsertStartTime = System.currentTimeMillis();
+                    batchService.batchInsertWithRetry(batchList/*, existingKeys*/); // 존재하는 키 전달 <<// 중복 데이터 키 조회 및 필터링 << 실 데이터에서는 중복으로 키값이 들어올 경우가 없다고 판단하여 주석처리함.
+                    batchList.clear();
+                    long batchInsertEndTime = System.currentTimeMillis();
+                    totalBatchInsertTime += (batchInsertEndTime - batchInsertStartTime);
                 }
             } catch (Exception e) {
                 logger.error("Initial transfer failed for tracking PK {}, attempting retry...", sourceData.getTmsTrackingPK());
+                long retryStartTime = System.currentTimeMillis();
                 retryFailedData(sourceData, 0);
+                long retryEndTime = System.currentTimeMillis();
+                totalRetryTime += (retryEndTime - retryStartTime);
             }
+
+            long recordEndTime = System.currentTimeMillis();
+            totalRecordTime += (recordEndTime - recordStartTime);
 
             // 진행 상황 퍼센티지 계산 및 로그 기록
             int progressPercentage = ((i + 1) * 100) / totalRecords;
@@ -84,13 +119,37 @@ public class DataTransferService {
             }
         }
 
+        // 남은 데이터 처리
+        if (!batchList.isEmpty()) {
+            // 중복 데이터 키 조회 및 필터링 << 실 데이터에서는 중복으로 키값이 들어올 경우가 없다고 판단하여 주석처리함.
+//            Set<TL_VDS_PASSKey> keysToCheck = batchList.stream()
+//                    .map(TL_VDS_PASS::getTlVdsPassPK)
+//                    .collect(Collectors.toSet());
+
+//            Set<TL_VDS_PASSKey> existingKeys = tlVdsPassReposit.findExistingKeys(keysToCheck);
+
+            long batchInsertStartTime = System.currentTimeMillis();
+            batchService.batchInsertWithRetry(batchList/*, existingKeys*/); // 존재하는 키 전달 <<// 중복 데이터 키 조회 및 필터링 << 실 데이터에서는 중복으로 키값이 들어올 경우가 없다고 판단하여 주석처리함.
+            long batchInsertEndTime = System.currentTimeMillis();
+            totalBatchInsertTime += (batchInsertEndTime - batchInsertStartTime);
+        }
+
+        long flushStartTime = System.currentTimeMillis();
         secondaryEntityManager.flush();
         secondaryEntityManager.clear();
+        long flushEndTime = System.currentTimeMillis();
+        totalFlushTime += (flushEndTime - flushStartTime);
 
         long endTime = System.currentTimeMillis(); // 종료 시간
-        long duration = endTime - startTime; // 소요 시간 (밀리초)
+        long totalDuration = endTime - startTime; // 소요 시간 (밀리초)
 
-        logger.info("Data transfer completed for {} records in {} ms", totalRecords, duration);
+        logger.info("Data transfer completed for {} records in {} ms", totalRecords, totalDuration);
+        logger.info("Total validation time: {} ms", totalValidationTime);
+        logger.info("Total conversion time: {} ms", totalConversionTime);
+        logger.info("Total batch insert time: {} ms", totalBatchInsertTime);
+        logger.info("Total retry time: {} ms", totalRetryTime);
+        logger.info("Total record processing time: {} ms", totalRecordTime);
+        logger.info("Total flush and clear time: {} ms", totalFlushTime);
     }
 
     /**
@@ -124,7 +183,7 @@ public class DataTransferService {
         try {
             TL_VDS_PASSDto dto = convertEntityToDTO(failedData);
             TL_VDS_PASS retryData = convertDtoToEntity(dto);
-            batchService.batchInsertWithRetry(List.of(retryData));
+            batchService.batchInsertWithRetry(List.of(retryData)/*, Set.of()*/); // 재시도 시 기존 키가 없는 상태로 처리 <<// 중복 데이터 키 조회 및 필터링 << 실 데이터에서는 중복으로 키값이 들어올 경우가 없다고 판단하여 주석처리함.
             retryLogger.info("Retry successful for tracking PK {}", failedData.getTmsTrackingPK());
         } catch (Exception retryException) {
             retryLogger.error("Retry failed for tracking PK {}: {}, Attempt: {}", failedData.getTmsTrackingPK(), failedData, retryCount, retryException);
@@ -139,37 +198,34 @@ public class DataTransferService {
      * @return 변환된 DTO 객체
      */
     private TL_VDS_PASSDto convertEntityToDTO(Tms_Tracking entity) {
-
-
         TL_VDS_PASSKeyDto keyDto = new TL_VDS_PASSKeyDto();
         TL_VDS_PASSDto dto = new TL_VDS_PASSDto();
-        //통행일시
+        // 통행일시
         keyDto.setPASS_DT(java.sql.Timestamp.valueOf(entity.getTmsTrackingPK().getTimeStamp().toLocalDateTime()));
-        //카메라 아이디
-        keyDto.setCAMERA_ID(String.valueOf(entity.getTmsTrackingPK().getCamID())); // getCameraId() 대신 getCamID() 사용
-        //통행차량 아이디
-        keyDto.setPASSVHCL_ID(entity.getTmsTrackingPK().getTrackingID()); // getTrackingId() 대신 getTrackingID() 사용
+        // 카메라 아이디
+        keyDto.setCAMERA_ID(String.valueOf(entity.getTmsTrackingPK().getCamID()));
+        // 통행차량 아이디
+        keyDto.setPASSVHCL_ID(entity.getTmsTrackingPK().getTrackingID());
 
         // TL_VDS_PASSKey
         dto.setTlVdsPassPK(keyDto);
-        //설치위치 명
+        // 설치위치 명
         dto.setINSTLLC_NM(entity.getSiteName());
-        //차량 분류(primart db 에서는 해당 값이 차량코드로 들어옴. 이것을 secondary 디비에서는 차량분류항목에 따라 파싱하여 적재할것임.
-        //0:승용차/SUV, 1:소형버스, 2:대형버스 3:트럭, 4:대형 트레일러, 5:오토바이/자전거, 6:보행자 8:VAN/승합차/스타렉스, 9:삼륜차
+        // 차량 분류 (primary db 에서는 해당 값이 차량코드로 들어옴. 이것을 secondary 디비에서는 차량분류항목에 따라 파싱하여 적재할것임)
         dto.setVHCL_CLSF(ParshingUtil.getVehicleClassification(entity.getLabelID()));
-        //차량 분류명
+        // 차량 분류명
         dto.setVHCL_CLSFNM(entity.getLabelName());
-        //차량 분류 그룹
+        // 차량 분류 그룹
         dto.setVHCL_CLSFGRP(String.valueOf(entity.getLabelGroup()));
-        //권역 아이디
+        // 권역 아이디
         dto.setRGSPH_ID(String.valueOf(entity.getRegionID()));
-        //권역 명
+        // 권역 명
         dto.setRGSPH_NM(entity.getRegionName());
-        //속도
+        // 속도
         dto.setSPEED(BigDecimal.valueOf(entity.getVelocity()));
-        //이벤트 코드
+        // 이벤트 코드
         dto.setEVNT_CD(String.valueOf(entity.getEventID()));
-        //이벤트 명
+        // 이벤트 명
         dto.setEVNT_NM(entity.getEventName());
 
         return dto;
@@ -204,5 +260,4 @@ public class DataTransferService {
 
         return entity;
     }
-
 }
