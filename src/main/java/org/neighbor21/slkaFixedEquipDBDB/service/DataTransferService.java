@@ -50,9 +50,10 @@ public class DataTransferService {
      * Primary 데이터베이스에서 Secondary 데이터베이스로 데이터를 전송하는 메소드.
      *
      * @param newDataList 전송할 데이터 리스트
+     * @return 데이터 전송 성공 여부
      */
     @Transactional("secondaryTransactionManager") // 트랜잭션 관리 설정
-    public void transferData(List<Tms_Tracking> newDataList) {
+    public boolean transferData(List<Tms_Tracking> newDataList) {
         long startTime = System.currentTimeMillis(); // 시작 시간
         int totalRecords = newDataList.size();
         logger.info("Starting data transfer for {} records", totalRecords);
@@ -60,6 +61,7 @@ public class DataTransferService {
         int batchSize = 1000;
 
         List<TL_VDS_PASS> batchList = new ArrayList<>();
+        boolean transferSuccessful = true; // 데이터 전송 성공 여부
 
         // 시간 측정 변수 초기화
         long totalConversionTime = 0;
@@ -88,16 +90,8 @@ public class DataTransferService {
                 totalConversionTime += (conversionEndTime - conversionStartTime);
 
                 if (batchList.size() == batchSize) {
-                    // 중복 데이터 키 조회 및 필터링 << 실 데이터에서는 중복으로 키값이 들어올 경우가 없다고 판단하여 주석처리함.
-//
-//                    Set<TL_VDS_PASSKey> keysToCheck = batchList.stream()
-//                            .map(TL_VDS_PASS::getTlVdsPassPK)
-//                            .collect(Collectors.toSet());
-
-//                    Set<TL_VDS_PASSKey> existingKeys = tlVdsPassReposit.findExistingKeys(keysToCheck);
-
                     long batchInsertStartTime = System.currentTimeMillis();
-                    batchService.batchInsertWithRetry(batchList/*, existingKeys*/); // 존재하는 키 전달 <<// 중복 데이터 키 조회 및 필터링 << 실 데이터에서는 중복으로 키값이 들어올 경우가 없다고 판단하여 주석처리함.
+                    batchService.batchInsertWithRetry(batchList);
                     batchList.clear();
                     long batchInsertEndTime = System.currentTimeMillis();
                     totalBatchInsertTime += (batchInsertEndTime - batchInsertStartTime);
@@ -105,9 +99,12 @@ public class DataTransferService {
             } catch (Exception e) {
                 logger.error("Initial transfer failed for tracking PK {}, attempting retry...", sourceData.getTmsTrackingPK());
                 long retryStartTime = System.currentTimeMillis();
-                retryFailedData(sourceData, 0);
+                boolean retrySuccess = retryFailedData(sourceData, 0);
                 long retryEndTime = System.currentTimeMillis();
                 totalRetryTime += (retryEndTime - retryStartTime);
+                if (!retrySuccess) {
+                    transferSuccessful = false; // 전송 실패로 설정
+                }
             }
 
             long recordEndTime = System.currentTimeMillis();
@@ -123,15 +120,8 @@ public class DataTransferService {
 
         // 남은 데이터 처리
         if (!batchList.isEmpty()) {
-            // 중복 데이터 키 조회 및 필터링 << 실 데이터에서는 중복으로 키값이 들어올 경우가 없다고 판단하여 주석처리함.
-//            Set<TL_VDS_PASSKey> keysToCheck = batchList.stream()
-//                    .map(TL_VDS_PASS::getTlVdsPassPK)
-//                    .collect(Collectors.toSet());
-
-//            Set<TL_VDS_PASSKey> existingKeys = tlVdsPassReposit.findExistingKeys(keysToCheck);
-
             long batchInsertStartTime = System.currentTimeMillis();
-            batchService.batchInsertWithRetry(batchList/*, existingKeys*/); // 존재하는 키 전달 <<// 중복 데이터 키 조회 및 필터링 << 실 데이터에서는 중복으로 키값이 들어올 경우가 없다고 판단하여 주석처리함.
+            batchService.batchInsertWithRetry(batchList);
             long batchInsertEndTime = System.currentTimeMillis();
             totalBatchInsertTime += (batchInsertEndTime - batchInsertStartTime);
         }
@@ -152,6 +142,8 @@ public class DataTransferService {
         logger.info("Total retry time: {} ms", totalRetryTime);
         logger.info("Total record processing time: {} ms", totalRecordTime);
         logger.info("Total flush and clear time: {} ms", totalFlushTime);
+
+        return transferSuccessful; // 데이터 전송 성공 여부 반환
     }
 
     /**
@@ -175,11 +167,12 @@ public class DataTransferService {
      *
      * @param failedData 전송에 실패한 데이터
      * @param retryCount 현재 재시도 횟수
+     * @return 재시도 성공 여부
      */
-    private void retryFailedData(Tms_Tracking failedData, int retryCount) {
+    private boolean retryFailedData(Tms_Tracking failedData, int retryCount) {
         if (retryCount > 3) {
             logger.error("Max retries exceeded for tracking PK {}: {}", failedData.getTmsTrackingPK(), failedData);
-            return;
+            return false;
         }
 
         try {
@@ -187,14 +180,16 @@ public class DataTransferService {
             TL_VDS_PASS retryData = convertDtoToEntity(dto);
             batchService.batchInsertWithRetry(List.of(retryData));
             retryLogger.info("Retry successful for tracking PK {}", failedData.getTmsTrackingPK());
+            return true; // 재시도 성공
         } catch (DataIntegrityViolationException e) {
             logger.error("Retry {} failed for tracking PK {} due to constraint violation, skipping record. Error: {}", retryCount, failedData.getTmsTrackingPK(), e.getMessage());
+            return false; // 재시도 실패
         } catch (JpaSystemException e) {
             retryLogger.error("Retry {} failed for tracking PK {}, attempting retry again... Error: {}", retryCount, failedData.getTmsTrackingPK(), e.getMessage());
-            retryFailedData(failedData, retryCount + 1);
+            return retryFailedData(failedData, retryCount + 1); // 재시도
         } catch (Exception e) {
             retryLogger.error("Retry {} failed for tracking PK {}, attempting retry again... Error: ", retryCount, failedData.getTmsTrackingPK(), e);
-            retryFailedData(failedData, retryCount + 1);
+            return retryFailedData(failedData, retryCount + 1); // 재시도
         }
     }
 

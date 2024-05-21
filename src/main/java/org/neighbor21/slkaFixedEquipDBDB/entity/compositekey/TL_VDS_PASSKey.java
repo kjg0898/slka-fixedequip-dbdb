@@ -42,12 +42,12 @@ public class TL_VDS_PASSKey implements Serializable {
     public TL_VDS_PASSKey() {
     }
 
-//    // Constructor
-//    public TL_VDS_PASSKey(Timestamp PASS_DT, String CAMERA_ID, String PASSVHCL_ID) {
-//        this.PASS_DT = PASS_DT;
-//        this.CAMERA_ID = CAMERA_ID;
-//        this.PASSVHCL_ID = PASSVHCL_ID;
-//    }
+    // Constructor
+    public TL_VDS_PASSKey(Timestamp PASS_DT, String CAMERA_ID, String PASSVHCL_ID) {
+        this.PASS_DT = PASS_DT;
+        this.CAMERA_ID = CAMERA_ID;
+        this.PASSVHCL_ID = PASSVHCL_ID;
+    }
 }
 
 

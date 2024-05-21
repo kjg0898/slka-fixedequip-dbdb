@@ -40,10 +40,10 @@ public class Tms_TrackingKey implements Serializable {
     public Tms_TrackingKey() {
     }
 
-//    // Constructor
-//    public Tms_TrackingKey(Timestamp timeStamp, int camID, String trackingID) {
-//        this.timeStamp = timeStamp;
-//        this.camID = camID;
-//        this.trackingID = trackingID;
-//    }
+    // Constructor
+    public Tms_TrackingKey(Timestamp timeStamp, int camID, String trackingID) {
+        this.timeStamp = timeStamp;
+        this.camID = camID;
+        this.trackingID = trackingID;
+    }
 }

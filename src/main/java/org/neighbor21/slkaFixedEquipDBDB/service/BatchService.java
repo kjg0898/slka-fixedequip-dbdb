@@ -27,6 +27,11 @@ public class BatchService {
     @PersistenceContext(unitName = "secondary")
     private EntityManager secondaryEntityManager;
 
+    /**
+     * BatchService 생성자.
+     *
+     * @param retryConfig 재시도 구성 설정
+     */
     @Autowired
     public BatchService(RetryConfig retryConfig, @Qualifier("secondaryTransactionManager") PlatformTransactionManager transactionManager) {
         this.retryConfig = retryConfig;
@@ -35,7 +40,7 @@ public class BatchService {
 
     /**
      * 엔티티 리스트를 배치로 삽입하는 메소드. Resilience4j를 사용하여 재시도 로직을 구현함.
-     *
+     * 각 엔티티를 지속하고, 주기적으로 EntityManager를 플러시 및 클리어하여 메모리 사용을 최적화한다.
      * @param entities 삽입할 엔티티 리스트
      *                 //* @param existingKeys 이미 존재하는 키 세트 <<// 중복 데이터 키 조회 및 필터링 << 실 데이터에서는 중복으로 키값이 들어올 경우가 없다고 판단하여 주석처리함.
      */
