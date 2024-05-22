@@ -59,7 +59,7 @@ public class DataTransferService {
         int totalRecords = newDataList.size();
         logger.info("Starting data transfer for {} records", totalRecords);
         int lastLoggedPercentage = 0;
-        int batchSize = Constants.DEFAULT_BATCH_SIZE; // 배치 크기 설정
+        int batchSize = Constants.DEFAULT_BATCH_SIZE; // 배치 크기 설정;
 
         List<TL_VDS_PASS> batchList = new ArrayList<>();
         boolean transferSuccessful = true; // 데이터 전송 성공 여부
