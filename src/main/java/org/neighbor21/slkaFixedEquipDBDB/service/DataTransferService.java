@@ -3,6 +3,7 @@ package org.neighbor21.slkaFixedEquipDBDB.service;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import org.neighbor21.slkaFixedEquipDBDB.Util.ParshingUtil;
+import org.neighbor21.slkaFixedEquipDBDB.config.Constants;
 import org.neighbor21.slkaFixedEquipDBDB.dto.TL_VDS_PASSDto;
 import org.neighbor21.slkaFixedEquipDBDB.dto.TL_VDS_PASSKeyDto;
 import org.neighbor21.slkaFixedEquipDBDB.entity.compositekey.TL_VDS_PASSKey;
@@ -58,7 +59,7 @@ public class DataTransferService {
         int totalRecords = newDataList.size();
         logger.info("Starting data transfer for {} records", totalRecords);
         int lastLoggedPercentage = 0;
-        int batchSize = 1000;
+        int batchSize = Constants.DEFAULT_BATCH_SIZE; // 배치 크기 설정
 
         List<TL_VDS_PASS> batchList = new ArrayList<>();
         boolean transferSuccessful = true; // 데이터 전송 성공 여부
