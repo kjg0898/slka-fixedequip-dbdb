@@ -171,28 +171,34 @@ public class DataTransferService {
      * @return 재시도 성공 여부
      */
     private boolean retryFailedData(Tms_Tracking failedData, int retryCount) {
+        // 재시도 횟수가 3회를 초과한 경우 재시도를 중단하고 false를 반환합니다.
         if (retryCount > 3) {
             logger.error("Max retries exceeded for tracking PK {}: {}", failedData.getTmsTrackingPK(), failedData);
             return false;
         }
 
         try {
+            // 엔티티를 DTO로 변환하고 다시 엔티티로 변환하여 재시도합니다.
             TL_VDS_PASSDto dto = convertEntityToDTO(failedData);
             TL_VDS_PASS retryData = convertDtoToEntity(dto);
             batchService.batchInsertWithRetry(List.of(retryData));
             retryLogger.info("Retry successful for tracking PK {}", failedData.getTmsTrackingPK());
             return true; // 재시도 성공
         } catch (DataIntegrityViolationException e) {
+            // 제약 조건 위반으로 인해 실패한 경우 재시도를 중단하고 false를 반환합니다.
             logger.error("Retry {} failed for tracking PK {} due to constraint violation, skipping record. Error: {}", retryCount, failedData.getTmsTrackingPK(), e.getMessage());
             return false; // 재시도 실패
         } catch (JpaSystemException e) {
+            // JPA 시스템 예외가 발생한 경우 재시도를 수행합니다.
             retryLogger.error("Retry {} failed for tracking PK {}, attempting retry again... Error: {}", retryCount, failedData.getTmsTrackingPK(), e.getMessage());
             return retryFailedData(failedData, retryCount + 1); // 재시도
         } catch (Exception e) {
+            // 일반적인 예외가 발생한 경우 재시도를 수행합니다.
             retryLogger.error("Retry {} failed for tracking PK {}, attempting retry again... Error: ", retryCount, failedData.getTmsTrackingPK(), e);
             return retryFailedData(failedData, retryCount + 1); // 재시도
         }
     }
+
 
     /**
      * Tms_Tracking 엔티티를 TL_VDS_PASSDto로 변환하는 메소드.

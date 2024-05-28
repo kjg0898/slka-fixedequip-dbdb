@@ -52,16 +52,22 @@ public class BatchService {
                 // 현재 배치 리스트를 추출
                 List<TL_VDS_PASS> batchList = entities.subList(i, end);
 
-                // Retry.decorateSupplier를 사용하여 재시도 로직을 감싼 Supplier 생성
                 try {
                     for (TL_VDS_PASS entity : batchList) {
 //                            // 존재하지 않는 키만 삽입
 //                            if (!existingKeys.contains(entity.getTlVdsPassPK())) {
 //                                secondaryEntityManager.persist(entity); // 엔티티 삽입
 //                            }
-                        secondaryEntityManager.persist(entity);
+                        try {
+                            //엔티티를 영속성 컨텍스트에 저장
+                            secondaryEntityManager.persist(entity);
+                        } catch (Exception e) {
+                            logger.warn("Duplicate key violation for entity with key {}: {}", entity.getTlVdsPassPK(), e.getMessage());
+                        }
                     }
+                    //영속성 컨텍스트의 변경 내용을 데이터베이스에 반영
                     secondaryEntityManager.flush();
+                    // 영속성 컨텍스트를 비움
                     secondaryEntityManager.clear();
                 } catch (Exception e) {
                     logger.warn("Batch insert attempt failed at index {} to {}: {}", i, end, e.getMessage(), e);
