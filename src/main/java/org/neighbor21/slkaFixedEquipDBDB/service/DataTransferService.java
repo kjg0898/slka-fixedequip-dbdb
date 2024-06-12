@@ -33,7 +33,7 @@ import java.util.List;
  * -----------------------------------------------------------
  * 2024-04-08        kjg08           최초 생성
  */
-@Service // Spring의 서비스 컴포넌트로 등록
+@Service
 public class DataTransferService {
     private static final Logger logger = LoggerFactory.getLogger(DataTransferService.class);
     private static final Logger retryLogger = LoggerFactory.getLogger("RetryLogger");
@@ -48,10 +48,10 @@ public class DataTransferService {
     }
 
     /**
-     * Primary 데이터베이스에서 Secondary 데이터베이스로 데이터를 전송하는 메소드.
+     * 데이터를 Primary 테이블에서 Secondary 테이블로 전송
      *
-     * @param newDataList 전송할 데이터 리스트
-     * @return 데이터 전송 성공 여부
+     * @param newDataList Primary 테이블에서 가져온 데이터 리스트
+     * @return 전송 성공 여부
      */
     @Transactional("secondaryTransactionManager") // 트랜잭션 관리 설정
     public boolean transferData(List<Tms_Tracking> newDataList) {
@@ -76,6 +76,7 @@ public class DataTransferService {
             Tms_Tracking sourceData = newDataList.get(i);
             long recordStartTime = System.currentTimeMillis();
             try {
+                // 데이터 유효성 검사
                 long validationStartTime = System.currentTimeMillis();
                 if (!validateData(sourceData)) {
                     continue;
@@ -83,6 +84,7 @@ public class DataTransferService {
                 long validationEndTime = System.currentTimeMillis();
                 totalValidationTime += (validationEndTime - validationStartTime);
 
+                // 엔티티를 DTO로 변환
                 long conversionStartTime = System.currentTimeMillis();
                 TL_VDS_PASSDto dto = convertEntityToDTO(sourceData);
                 TL_VDS_PASS targetData = convertDtoToEntity(dto);
@@ -90,6 +92,7 @@ public class DataTransferService {
                 long conversionEndTime = System.currentTimeMillis();
                 totalConversionTime += (conversionEndTime - conversionStartTime);
 
+                // 배치 크기에 도달하면 배치 삽입 수행
                 if (batchList.size() == batchSize) {
                     long batchInsertStartTime = System.currentTimeMillis();
                     batchService.batchInsertWithRetry(batchList);
@@ -98,6 +101,7 @@ public class DataTransferService {
                     totalBatchInsertTime += (batchInsertEndTime - batchInsertStartTime);
                 }
             } catch (Exception e) {
+                // 예외 발생 시 재시도 로직 수행
                 logger.error("Initial transfer failed for tracking PK {}, attempting retry...", sourceData.getTmsTrackingPK());
                 long retryStartTime = System.currentTimeMillis();
                 boolean retrySuccess = retryFailedData(sourceData, 0);
@@ -127,6 +131,7 @@ public class DataTransferService {
             totalBatchInsertTime += (batchInsertEndTime - batchInsertStartTime);
         }
 
+        // EntityManager 플러시 및 클리어
         long flushStartTime = System.currentTimeMillis();
         secondaryEntityManager.flush();
         secondaryEntityManager.clear();
@@ -148,10 +153,10 @@ public class DataTransferService {
     }
 
     /**
-     * 주어진 데이터를 유효성 검사하는 메소드.
+     * 데이터를 유효성 검사
      *
-     * @param sourceData 유효성 검사할 데이터
-     * @return 유효성 검사 결과 (유효하면 true, 아니면 false)
+     * @param sourceData 검증할 데이터
+     * @return 유효성 검사 결과
      */
     private boolean validateData(Tms_Tracking sourceData) {
         // 예: 속도가 음수이거나 특정 범위를 초과하는지 검사
@@ -164,99 +169,74 @@ public class DataTransferService {
     }
 
     /**
-     * 데이터 전송 실패 시 재시도하는 메소드.
+     * 재시도 로직을 수행
      *
-     * @param failedData 전송에 실패한 데이터
-     * @param retryCount 현재 재시도 횟수
+     * @param failedData 재시도할 데이터
+     * @param retryCount 재시도 횟수
      * @return 재시도 성공 여부
      */
     private boolean retryFailedData(Tms_Tracking failedData, int retryCount) {
-        // 재시도 횟수가 3회를 초과한 경우 재시도를 중단하고 false를 반환합니다.
         if (retryCount > 3) {
             logger.error("Max retries exceeded for tracking PK {}: {}", failedData.getTmsTrackingPK(), failedData);
             return false;
         }
 
         try {
-            // 엔티티를 DTO로 변환하고 다시 엔티티로 변환하여 재시도합니다.
             TL_VDS_PASSDto dto = convertEntityToDTO(failedData);
             TL_VDS_PASS retryData = convertDtoToEntity(dto);
             batchService.batchInsertWithRetry(List.of(retryData));
             retryLogger.info("Retry successful for tracking PK {}", failedData.getTmsTrackingPK());
-            return true; // 재시도 성공
+            return true;
         } catch (DataIntegrityViolationException e) {
-            // 제약 조건 위반으로 인해 실패한 경우 재시도를 중단하고 false를 반환합니다.
             logger.error("Retry {} failed for tracking PK {} due to constraint violation, skipping record. Error: {}", retryCount, failedData.getTmsTrackingPK(), e.getMessage());
-            return false; // 재시도 실패
+            return false;
         } catch (JpaSystemException e) {
-            // JPA 시스템 예외가 발생한 경우 재시도를 수행합니다.
             retryLogger.error("Retry {} failed for tracking PK {}, attempting retry again... Error: {}", retryCount, failedData.getTmsTrackingPK(), e.getMessage());
-            return retryFailedData(failedData, retryCount + 1); // 재시도
+            return retryFailedData(failedData, retryCount + 1);
         } catch (Exception e) {
-            // 일반적인 예외가 발생한 경우 재시도를 수행합니다.
             retryLogger.error("Retry {} failed for tracking PK {}, attempting retry again... Error: ", retryCount, failedData.getTmsTrackingPK(), e);
-            return retryFailedData(failedData, retryCount + 1); // 재시도
+            return retryFailedData(failedData, retryCount + 1);
         }
     }
 
-
     /**
-     * Tms_Tracking 엔티티를 TL_VDS_PASSDto로 변환하는 메소드.
+     * 엔티티를 DTO로 변환
      *
      * @param entity 변환할 엔티티
-     * @return 변환된 DTO 객체
+     * @return 변환된 DTO
      */
     private TL_VDS_PASSDto convertEntityToDTO(Tms_Tracking entity) {
         TL_VDS_PASSKeyDto keyDto = new TL_VDS_PASSKeyDto();
         TL_VDS_PASSDto dto = new TL_VDS_PASSDto();
-        // 통행일시
         keyDto.setPASS_DT(java.sql.Timestamp.valueOf(entity.getTmsTrackingPK().getTimeStamp().toLocalDateTime()));
-        // 카메라 아이디
         keyDto.setCAMERA_ID(String.valueOf(entity.getTmsTrackingPK().getCamID()));
-        // 통행차량 아이디
         keyDto.setPASSVHCL_ID(entity.getTmsTrackingPK().getTrackingID());
-
-        // TL_VDS_PASSKey
         dto.setTlVdsPassPK(keyDto);
-        // 설치위치 명
         dto.setINSTLLC_NM(entity.getSiteName());
-        // 차량 분류 (primary db 에서는 해당 값이 차량코드로 들어옴. 이것을 secondary 디비에서는 차량분류항목에 따라 파싱하여 적재할것임)
         dto.setVHCL_CLSF(ParshingUtil.getVehicleClassification(entity.getLabelID()));
-        // 차량 분류명
         dto.setVHCL_CLSFNM(entity.getLabelName());
-        // 차량 분류 그룹
         dto.setVHCL_CLSFGRP(String.valueOf(entity.getLabelGroup()));
-        // 권역 아이디
         dto.setRGSPH_ID(String.valueOf(entity.getRegionID()));
-        // 권역 명
         dto.setRGSPH_NM(entity.getRegionName());
-        // 속도
         dto.setSPEED(BigDecimal.valueOf(entity.getVelocity()));
-        // 이벤트 코드
         dto.setEVNT_CD(String.valueOf(entity.getEventID()));
-        // 이벤트 명
         dto.setEVNT_NM(entity.getEventName());
-
         return dto;
     }
 
     /**
-     * TL_VDS_PASSDto를 TL_VDS_PASS 엔티티로 변환하는 메소드.
+     * DTO를 엔티티로 변환
      *
      * @param dto 변환할 DTO
-     * @return 변환된 엔티티 객체
+     * @return 변환된 엔티티
      */
     private TL_VDS_PASS convertDtoToEntity(TL_VDS_PASSDto dto) {
         TL_VDS_PASS entity = new TL_VDS_PASS();
         TL_VDS_PASSKey key = new TL_VDS_PASSKey();
-
-        // Key 설정
         key.setPASS_DT(dto.getTlVdsPassPK().getPASS_DT());
         key.setCAMERA_ID(dto.getTlVdsPassPK().getCAMERA_ID());
         key.setPASSVHCL_ID(dto.getTlVdsPassPK().getPASSVHCL_ID());
         entity.setTlVdsPassPK(key);
-
-        // 다른 필드 설정
         entity.setINSTLLC_NM(dto.getINSTLLC_NM());
         entity.setVHCL_CLSF(dto.getVHCL_CLSF());
         entity.setVHCL_CLSFNM(dto.getVHCL_CLSFNM());
@@ -266,7 +246,6 @@ public class DataTransferService {
         entity.setSPEED(dto.getSPEED());
         entity.setEVNT_CD(dto.getEVNT_CD());
         entity.setEVNT_NM(dto.getEVNT_NM());
-
         return entity;
     }
 }

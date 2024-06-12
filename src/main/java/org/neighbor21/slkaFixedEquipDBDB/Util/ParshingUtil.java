@@ -1,11 +1,11 @@
 package org.neighbor21.slkaFixedEquipDBDB.Util;
 
 /**
- * packageName    : org.neighbor21.slkafixedequipdbdb.service
- * fileName       : VehicleClassificationUtil.java
+ * packageName    : org.neighbor21.slkafixedequipdbdb.Util
+ * fileName       : ParshingUtil.java
  * author         : kjg08
  * date           : 24. 4. 11.
- * description    : 데이터 파싱을 위한 유틸 모음
+ * description    : 데이터 파싱을 위한 유틸리티 클래스 모음.
  * ===========================================================
  * DATE              AUTHOR             NOTE
  * -----------------------------------------------------------
@@ -13,7 +13,12 @@ package org.neighbor21.slkaFixedEquipDBDB.Util;
  */
 public class ParshingUtil {
 
-    //차량 분류 코드에 맞춰서 차량 종류로 분류
+    /**
+     * 차량 분류 코드에 맞춰서 차량 종류로 분류.
+     *
+     * @param labelId 차량 분류 코드
+     * @return 차량 종류
+     */
     public static String getVehicleClassification(int labelId) {
         return switch (labelId) {
             case 0 -> "승용차/SUV";

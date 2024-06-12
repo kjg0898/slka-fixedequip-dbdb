@@ -15,6 +15,7 @@ import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.EnableTransactionManagement;
 
 import javax.sql.DataSource;
+import java.util.logging.Logger;
 
 /**
  * packageName    : org.neighbor21.slkafixedequipdbdb
@@ -28,7 +29,6 @@ import javax.sql.DataSource;
  * 2024-04-03        kjg08           최초 생성
  */
 
-
 @EnableConfigurationProperties
 @Configuration // Spring의 설정 파일임을 나타냄. 이 클래스에서 선언된 빈들은 Spring 컨테이너에 의해 관리됨
 @EnableTransactionManagement // Spring 선언적 트랜잭션 자동 관리 활성화
@@ -39,6 +39,8 @@ import javax.sql.DataSource;
 )
 public class PrimaryDataSourceConfig {
 
+    private static final Logger logger = Logger.getLogger(PrimaryDataSourceConfig.class.getName());
+
     /**
      * 기본 데이터 소스 빈을 생성. Spring 컨테이너에 의해 관리됨.
      * application.properties 파일의 spring.datasource.primary 속성에 따라 설정됨.
@@ -48,8 +50,13 @@ public class PrimaryDataSourceConfig {
     @Primary // 여러 개의 빈 중 우선순위를 지정
     @Bean(name = "primaryDataSource") // Spring 컨테이너에 관리되는 빈 생성. 메소드 이름이 빈의 ID가 됨
     @ConfigurationProperties(prefix = "spring.datasource.primary") // application.properties 설정과 빈의 속성 결정
-    public DataSource primaryDataSource() { // 데이터베이스 연결 정보를 가진 DataSource 객체를 생성하고 반환
-        return DataSourceBuilder.create().build();
+    public DataSource primaryDataSource() {
+        try {
+            return DataSourceBuilder.create().build();
+        } catch (Exception e) {
+            logger.severe("기본 데이터 소스 생성 중 오류 발생: " + e.getMessage());
+            throw new RuntimeException("기본 데이터 소스를 생성할 수 없습니다.", e);
+        }
     }
 
     /**
@@ -63,11 +70,16 @@ public class PrimaryDataSourceConfig {
     @Bean(name = "primaryEntityManagerFactory")
     public LocalContainerEntityManagerFactoryBean primaryEntityManagerFactory(
             EntityManagerFactoryBuilder builder, @Qualifier("primaryDataSource") DataSource dataSource) {
-        return builder
-                .dataSource(dataSource) // 데이터 소스 설정
-                .packages("org.neighbor21.slkaFixedEquipDBDB.entity.primary") // JPA 엔티티 패키지 경로 설정
-                .persistenceUnit("primary") // 영속성 유닛 이름 설정
-                .build();
+        try {
+            return builder
+                    .dataSource(dataSource)
+                    .packages("org.neighbor21.slkaFixedEquipDBDB.entity.primary")
+                    .persistenceUnit("primary")
+                    .build();
+        } catch (Exception e) {
+            logger.severe("기본 EntityManagerFactory 생성 중 오류 발생: " + e.getMessage());
+            throw new RuntimeException("기본 EntityManagerFactory를 생성할 수 없습니다.", e);
+        }
     }
 
     /**
@@ -80,9 +92,13 @@ public class PrimaryDataSourceConfig {
     @Bean(name = "primaryTransactionManager")
     public PlatformTransactionManager primaryTransactionManager(
             @Qualifier("primaryEntityManagerFactory") LocalContainerEntityManagerFactoryBean primaryEntityManagerFactory) {
-        JpaTransactionManager transactionManager = new JpaTransactionManager();
-        transactionManager.setEntityManagerFactory(primaryEntityManagerFactory.getObject()); // 엔티티 매니저 팩토리 설정
-        return transactionManager;
+        try {
+            JpaTransactionManager transactionManager = new JpaTransactionManager();
+            transactionManager.setEntityManagerFactory(primaryEntityManagerFactory.getObject());
+            return transactionManager;
+        } catch (Exception e) {
+            logger.severe("기본 트랜잭션 관리자 생성 중 오류 발생: " + e.getMessage());
+            throw new RuntimeException("기본 트랜잭션 관리자를 생성할 수 없습니다.", e);
+        }
     }
 }
-

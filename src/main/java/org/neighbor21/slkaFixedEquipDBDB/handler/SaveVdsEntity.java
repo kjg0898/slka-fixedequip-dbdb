@@ -7,6 +7,7 @@ import org.neighbor21.slkaFixedEquipDBDB.service.LastQueriedTimeService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
@@ -39,28 +40,39 @@ public class SaveVdsEntity {
     @Autowired
     private DataTransferService dataTransferService;
 
+    @Value("${schedule.cron}")
+    private String scheduleCron;
+
     /**
      * 일정한 간격(5분)으로 새로운 데이터를 조회하여 처리하는 메소드.
      * 마지막 조회 시간 이후의 데이터를 조회하여 변환 및 저장 작업을 수행함.
      */
-    @Scheduled(fixedRate = 290000) // 300000 milliseconds = 5 minutes 이지만 실제 처리 속도를 고려하여 290000 milliseconds로 설정
+    @Scheduled(cron = "${schedule.cron}")
     public void fetchNewData() {
         long programeStartTime = System.currentTimeMillis();
-        LocalDateTime lastQueried = lastQueriedService.getLastQueriedDateTime(); // 마지막 조회 시간 가져오기
-        List<Tms_Tracking> newDataList = tmsTrackingRepository.findNewDataSince(lastQueried); // 마지막 조회 시간 이후의 데이터 조회
+        try {
+            LocalDateTime lastQueried = lastQueriedService.getLastQueriedDateTime(); // 마지막 조회 시간 가져오기
+            List<Tms_Tracking> newDataList = tmsTrackingRepository.findNewDataSince(lastQueried); // 마지막 조회 시간 이후의 데이터 조회
 
-        if (!newDataList.isEmpty()) {
-            logger.info("{} 시간 이후의 데이터를 조회 후 변환 처리", lastQueried);
-            // 새로운 데이터가 있을 경우, 데이터 변환 및 저장 처리
-            boolean isTransferSuccessful = dataTransferService.transferData(newDataList); // DataTransferService에 새로운 데이터를 전달하여 처리
-            if (isTransferSuccessful) {
-                // 데이터 전송이 성공한 경우에만 마지막 조회 시간 업데이트
-                lastQueriedService.updateLastQueriedDateTime(LocalDateTime.now());
+            if (!newDataList.isEmpty()) {
+                logger.info("{} 시간 이후의 데이터를 조회 후 변환 처리", lastQueried);
+                // 새로운 데이터가 있을 경우, 데이터 변환 및 저장 처리
+                boolean isTransferSuccessful = dataTransferService.transferData(newDataList); // DataTransferService에 새로운 데이터를 전달하여 처리
+                if (isTransferSuccessful) {
+                    // 데이터 전송이 성공한 경우에 가장 최신의 timestamp로 마지막 조회 시간 업데이트
+                    LocalDateTime latestTimestamp = newDataList.stream()
+                            .map(t -> t.getTmsTrackingPK().getTimeStamp().toLocalDateTime())
+                            .max(LocalDateTime::compareTo)
+                            .orElse(lastQueried);
+                    lastQueriedService.updateLastQueriedDateTime(latestTimestamp);
+                }
+                long endTime = System.currentTimeMillis();
+                logger.info("모든 처리 완료 시간: {} ms", endTime - programeStartTime);
+            } else {
+                logger.info("새로운 데이터를 찾지 못했습니다.");
             }
-            long endTime = System.currentTimeMillis();
-            logger.info("all process complete time {} ms", endTime - programeStartTime);
-        } else {
-            logger.info("No new data found");
+        } catch (Exception e) {
+            logger.error("데이터 처리 중 예외 발생: ", e);
         }
     }
 }

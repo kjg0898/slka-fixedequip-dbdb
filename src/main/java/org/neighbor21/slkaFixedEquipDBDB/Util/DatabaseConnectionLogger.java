@@ -10,11 +10,11 @@ import java.sql.Connection;
 import java.sql.Statement;
 
 /**
- * packageName    : org.neighbor21.slkafixedequipdbdb.Util
+ * packageName    : org.neighbor21.slkaFixedEquipDBDB.Util
  * fileName       : DatabaseConnectionLogger.java
  * author         : kjg08
  * date           : 24. 4. 11.
- * description    : 디비 연결의 지속을 위해 쿼리 1을 날림
+ * description    : 데이터베이스 연결의 지속을 위해 쿼리 1을 날리는 유틸리티 클래스.
  * ===========================================================
  * DATE              AUTHOR             NOTE
  * -----------------------------------------------------------
@@ -30,6 +30,9 @@ public class DatabaseConnectionLogger {
         this.dataSource = dataSource;
     }
 
+    /**
+     * 애플리케이션 시작 시 데이터베이스 연결을 테스트하고 결과를 로그로 기록.
+     */
     @PostConstruct
     private void logDatabaseConnection() {
         try (Connection conn = dataSource.getConnection();

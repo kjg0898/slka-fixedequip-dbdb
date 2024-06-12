@@ -3,6 +3,7 @@ package org.neighbor21.slkaFixedEquipDBDB.service;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
@@ -32,6 +33,12 @@ public class DatabaseConnectionKeeper {
     private final DataSource secondaryDataSource;
     private final DataSource primaryDataSource;
 
+    @Value("${schedule.keepAlivePrimaryCron}")
+    private String keepAlivePrimaryCron;
+
+    @Value("${schedule.keepAliveSecondaryCron}")
+    private String keepAliveSecondaryCron;
+
     /**
      * 두 개의 DataSource를 주입받는 생성자.
      *
@@ -46,20 +53,20 @@ public class DatabaseConnectionKeeper {
 
     /**
      * 기본 데이터 소스의 연결을 유지하기 위한 메소드.
-     * 30초 간격으로 실행되어 연결을 유지함.
+     * cron 표현식에 따라 실행되어 연결을 유지함.
      */
-    @Scheduled(fixedDelay = 60000) // 30,000 milliseconds (30초) 마다 실행
+    @Scheduled(cron = "${schedule.keepAlivePrimaryCron}")
     public void keepAlivePrimaryDataSource() {
-        keepAliveConnection(primaryDataSource, "VDS");
+        keepAliveConnection(primaryDataSource, "Primary");
     }
 
     /**
      * 보조 데이터 소스의 연결을 유지하기 위한 메소드.
-     * 30초 간격으로 실행되어 연결을 유지함.
+     * cron 표현식에 따라 실행되어 연결을 유지함.
      */
-    @Scheduled(fixedDelay = 30000) // 30,000 milliseconds (30초) 마다 실행
+    @Scheduled(cron = "${schedule.keepAliveSecondaryCron}")
     public void keepAliveSecondaryDataSource() {
-        keepAliveConnection(secondaryDataSource, "SRLK");
+        keepAliveConnection(secondaryDataSource, "Secondary");
     }
 
     /**
@@ -79,7 +86,7 @@ public class DatabaseConnectionKeeper {
                 logger.warn("{} data source keep-alive query executed but didn't return a result.", dataSourceName);
             }
         } catch (Exception e) {
-            logger.error("Failed to keep alive " + dataSourceName + " data source: " + e.getMessage(), e);
+            logger.error("Failed to keep alive {} data source: {}", dataSourceName, e.getMessage(), e);
         }
     }
 }
