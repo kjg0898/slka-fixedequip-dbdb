@@ -3,7 +3,6 @@ package org.neighbor21.slkaFixedEquipDBDB.service;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
@@ -33,11 +32,8 @@ public class DatabaseConnectionKeeper {
     private final DataSource secondaryDataSource;
     private final DataSource primaryDataSource;
 
-    @Value("${schedule.keepAlivePrimaryCron}")
-    private String keepAlivePrimaryCron;
-
-    @Value("${schedule.keepAliveSecondaryCron}")
-    private String keepAliveSecondaryCron;
+    private static final int MAX_RETRIES = 5;
+    private static final long RETRY_DELAY_MS = 5000; // 5초
 
     /**
      * 두 개의 DataSource를 주입받는 생성자.
@@ -76,17 +72,29 @@ public class DatabaseConnectionKeeper {
      * @param dataSourceName 데이터 소스의 이름
      */
     private void keepAliveConnection(DataSource dataSource, String dataSourceName) {
-        try (Connection conn = dataSource.getConnection();
-             Statement stmt = conn.createStatement();
-             ResultSet rs = stmt.executeQuery("SELECT 1")) {
-            if (rs.next()) {
-                int result = rs.getInt(1); // SELECT 1 쿼리의 결과를 가져옴
-                logger.info("{} data source keep-alive query executed successfully. Result: {}", dataSourceName, result);
-            } else {
-                logger.warn("{} data source keep-alive query executed but didn't return a result.", dataSourceName);
+        int retries = 0;
+        while (retries < MAX_RETRIES) {
+            try (Connection conn = dataSource.getConnection();
+                 Statement stmt = conn.createStatement();
+                 ResultSet rs = stmt.executeQuery("SELECT 1")) {
+                if (rs.next()) {
+                    int result = rs.getInt(1); // SELECT 1 쿼리의 결과를 가져옴
+                    logger.info("{} data source keep-alive query executed successfully. Result: {}", dataSourceName, result);
+                    return;
+                } else {
+                    logger.warn("{} data source keep-alive query executed but didn't return a result.", dataSourceName);
+                }
+            } catch (Exception e) {
+                logger.error("Failed to keep alive {} data source: {}", dataSourceName, e.getMessage(), e);
+                retries++;
+                try {
+                    Thread.sleep(RETRY_DELAY_MS);
+                } catch (InterruptedException interruptedException) {
+                    logger.error("Retry delay interrupted", interruptedException);
+                    Thread.currentThread().interrupt();
+                }
             }
-        } catch (Exception e) {
-            logger.error("Failed to keep alive {} data source: {}", dataSourceName, e.getMessage(), e);
         }
+        logger.error("Failed to keep alive {} data source after {} retries", dataSourceName, MAX_RETRIES);
     }
 }

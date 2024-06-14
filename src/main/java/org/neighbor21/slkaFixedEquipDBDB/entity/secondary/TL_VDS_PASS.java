@@ -28,7 +28,7 @@ import java.math.BigDecimal;
 @Getter
 @Setter
 @Table(name = "TL_VDS_PASS", schema = "srlk") // 스키마와 테이블 이름을 정확히 지정
-@BatchSize(size = 1000)
+@BatchSize(size = 10000)
 @SQLInsert(sql = "INSERT INTO srlk.TL_VDS_PASS (EVNT_CD, EVNT_NM, INSTLLC_NM, RGSPH_ID, RGSPH_NM, SPEED, VHCL_CLSF, VHCL_CLSFGRP, VHCL_CLSFNM, CAMERA_ID, PASSVHCL_ID, PASS_DT) " +
         "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) " +
         "ON CONFLICT (PASS_DT, CAMERA_ID, PASSVHCL_ID) DO NOTHING")

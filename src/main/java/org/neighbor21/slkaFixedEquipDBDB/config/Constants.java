@@ -12,5 +12,5 @@ package org.neighbor21.slkaFixedEquipDBDB.config;
  * 24. 5. 13.        kjg08           최초 생성
  */
 public class Constants {
-    public static final int DEFAULT_BATCH_SIZE = 100000;
+    public static final int DEFAULT_BATCH_SIZE = 10000;
 }

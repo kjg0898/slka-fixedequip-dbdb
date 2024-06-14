@@ -67,9 +67,31 @@ public class BatchService {
                     secondaryEntityManager.clear();
                 } catch (Exception e) {
                     logger.warn("배치 삽입 시도 실패, 인덱스 {}에서 {}까지: {}", i, end, e.getMessage(), e);
-                    throw e; // 예외를 다시 던져 트랜잭션을 롤백합니다.
+                    // 재시도 로직 추가
+                    retryBatchInsert(batchList);
                 }
             }
         });
+    }
+
+    /**
+     * 실패한 배치 리스트를 재시도하는 메소드.
+     *
+     * @param batchList 실패한 배치 리스트
+     */
+    private void retryBatchInsert(List<TL_VDS_PASS> batchList) {
+        try {
+            for (TL_VDS_PASS entity : batchList) {
+                try {
+                    secondaryEntityManager.persist(entity);
+                } catch (Exception e) {
+                    logger.warn("중복 키 오류 발생, 엔티티 키 {}: {}", entity.getTlVdsPassPK(), e.getMessage());
+                }
+            }
+            secondaryEntityManager.flush();
+            secondaryEntityManager.clear();
+        } catch (Exception e) {
+            logger.error("재시도 실패: {}", e.getMessage(), e);
+        }
     }
 }

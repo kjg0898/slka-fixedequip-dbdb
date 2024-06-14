@@ -52,7 +52,7 @@ public class SaveVdsEntity {
         long programeStartTime = System.currentTimeMillis();
         try {
             LocalDateTime lastQueried = lastQueriedService.getLastQueriedDateTime(); // 마지막 조회 시간 가져오기
-            List<Tms_Tracking> newDataList = tmsTrackingRepository.findNewDataSince(lastQueried); // 마지막 조회 시간 이후의 데이터 조회
+            List<Tms_Tracking> newDataList = fetchDataWithRetry(lastQueried); // 마지막 조회 시간 이후의 데이터 조회
 
             if (!newDataList.isEmpty()) {
                 logger.info("{} 시간 이후의 데이터를 조회 후 변환 처리", lastQueried);
@@ -74,5 +74,36 @@ public class SaveVdsEntity {
         } catch (Exception e) {
             logger.error("데이터 처리 중 예외 발생: ", e);
         }
+    }
+
+    /**
+     * 마지막 조회 시간 이후의 데이터를 재시도 로직을 포함하여 가져오는 메소드.
+     *
+     * @param lastQueried 마지막 조회 시간
+     * @return 새로운 Tms_Tracking 데이터 리스트
+     */
+    private List<Tms_Tracking> fetchDataWithRetry(LocalDateTime lastQueried) {
+        int retryCount = 0;
+        int maxRetries = 1;
+        long retryDelay = 5000; // 5초
+
+        while (retryCount <= maxRetries) {
+            try {
+                return tmsTrackingRepository.findNewDataSince(lastQueried);
+            } catch (Exception e) {
+                logger.error("데이터 조회 실패, 재시도 중... (시도 횟수: {})", retryCount, e);
+                retryCount++;
+                if (retryCount > maxRetries) {
+                    throw e; // 최대 재시도 횟수 초과 시 예외 발생
+                }
+                try {
+                    Thread.sleep(retryDelay);
+                } catch (InterruptedException interruptedException) {
+                    logger.error("재시도 대기 중 인터럽트 발생", interruptedException);
+                    Thread.currentThread().interrupt();
+                }
+            }
+        }
+        return List.of(); // 실패 시 빈 리스트 반환
     }
 }
