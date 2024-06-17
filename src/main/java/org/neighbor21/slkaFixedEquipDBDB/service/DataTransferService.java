@@ -176,7 +176,7 @@ public class DataTransferService {
      * @return 재시도 성공 여부
      */
     private boolean retryFailedData(Tms_Tracking failedData, int retryCount) {
-        if (retryCount > 3) {
+        if (retryCount > 1) {
             logger.error("Max retries exceeded for tracking PK {}: {}", failedData.getTmsTrackingPK(), failedData);
             return false;
         }
