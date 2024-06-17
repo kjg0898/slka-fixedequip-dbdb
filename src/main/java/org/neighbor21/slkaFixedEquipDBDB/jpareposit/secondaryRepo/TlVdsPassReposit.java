@@ -15,7 +15,7 @@ import java.util.Set;
  * author         : kjg08
  * date           : 24. 4. 8.
  * description    : TL_VDS_PASS 엔티티에 대한 기본적인 CRUD 연산을 수행할 수 있게 해줍니다.
- *
+ * <p>
  * Repository 애너테이션은 이 인터페이스가 데이터 액세스 계층의 컴포넌트임을 나타냅니다. Spring Data JPA는 이 인터페이스의 구현체를 런타임에 자동으로 생성하여, 직접 구현할 필요 없이 바로 사용할 수 있게 해줍니다.
  * ===========================================================
  * DATE              AUTHOR             NOTE
