@@ -19,6 +19,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.sql.Timestamp;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -183,8 +185,8 @@ public class DataTransferService {
 
         try {
             TL_VDS_PASSDto dto = convertEntityToDTO(failedData);
-            TL_VDS_PASS retryData = convertDtoToEntity(dto);
-            batchService.batchInsertWithRetry(List.of(retryData));
+            TL_VDS_PASS data = convertDtoToEntity(dto);
+            batchService.batchInsertWithRetry(List.of(data));
             retryLogger.info("Retry successful for tracking PK {}", failedData.getTmsTrackingPK());
             return true;
         } catch (DataIntegrityViolationException e) {
@@ -246,6 +248,7 @@ public class DataTransferService {
         entity.setSPEED(dto.getSPEED());
         entity.setEVNT_CD(dto.getEVNT_CD());
         entity.setEVNT_NM(dto.getEVNT_NM());
+        entity.setCLCT_DT(Timestamp.valueOf(LocalDateTime.now())); // 수집일시로 현재 시간을 설정
         return entity;
     }
 }

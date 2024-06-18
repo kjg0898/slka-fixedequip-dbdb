@@ -11,6 +11,7 @@ import org.hibernate.annotations.SQLInsert;
 import org.neighbor21.slkaFixedEquipDBDB.entity.compositekey.TL_VDS_PASSKey;
 
 import java.math.BigDecimal;
+import java.sql.Timestamp;
 
 /**
  * packageName    : org.neighbor21.slkafixedequipdbdb
@@ -29,8 +30,8 @@ import java.math.BigDecimal;
 @Setter
 @Table(name = "TL_VDS_PASS", schema = "srlk") // 스키마와 테이블 이름을 정확히 지정
 @BatchSize(size = 10000)
-@SQLInsert(sql = "INSERT INTO srlk.TL_VDS_PASS (EVNT_CD, EVNT_NM, INSTLLC_NM, RGSPH_ID, RGSPH_NM, SPEED, VHCL_CLSF, VHCL_CLSFGRP, VHCL_CLSFNM, CAMERA_ID, PASSVHCL_ID, PASS_DT) " +
-        "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) " +
+@SQLInsert(sql = "INSERT INTO srlk.TL_VDS_PASS (EVNT_CD, EVNT_NM, INSTLLC_NM, RGSPH_ID, RGSPH_NM, SPEED, VHCL_CLSF, VHCL_CLSFGRP, VHCL_CLSFNM, CAMERA_ID, PASSVHCL_ID, PASS_DT, CLCT_DT) " +
+        "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) " +
         "ON CONFLICT (PASS_DT, CAMERA_ID, PASSVHCL_ID) DO NOTHING")
 public class TL_VDS_PASS {
 
@@ -63,4 +64,7 @@ public class TL_VDS_PASS {
 
     @Column(name = "EVNT_NM")
     private String EVNT_NM;
+
+    @Column(name = "CLCT_DT")
+    private Timestamp CLCT_DT;
 }
