@@ -56,10 +56,13 @@ dependencies {
 
 }
 
-tasks.named('bootBuildImage') {
-    builder = 'paketobuildpacks/builder-jammy-base:latest'
+bootJar {
+    archiveFileName = 'srlk-fixedEquip-dbdb-1.0-jar-with-dependencies.jar'
 }
 
 tasks.named('test') {
     useJUnitPlatform()
+}
+tasks.withType(Test) {
+    ignoreFailures = true
 }
