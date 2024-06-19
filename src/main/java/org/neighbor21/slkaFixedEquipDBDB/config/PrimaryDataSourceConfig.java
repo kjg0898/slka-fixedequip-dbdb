@@ -43,13 +43,13 @@ public class PrimaryDataSourceConfig {
 
     /**
      * 기본 데이터 소스 빈을 생성. Spring 컨테이너에 의해 관리됨.
-     * application.properties 파일의 spring.datasource.primary 속성에 따라 설정됨.
+     * application-prod.properties 파일의 spring.datasource.primary 속성에 따라 설정됨.
      *
      * @return 기본 데이터 소스 객체
      */
     @Primary // 여러 개의 빈 중 우선순위를 지정
     @Bean(name = "primaryDataSource") // Spring 컨테이너에 관리되는 빈 생성. 메소드 이름이 빈의 ID가 됨
-    @ConfigurationProperties(prefix = "spring.datasource.primary") // application.properties 설정과 빈의 속성 결정
+    @ConfigurationProperties(prefix = "spring.datasource.primary")
     public DataSource primaryDataSource() {
         try {
             return DataSourceBuilder.create().build();

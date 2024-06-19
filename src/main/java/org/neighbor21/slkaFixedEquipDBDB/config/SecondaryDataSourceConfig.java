@@ -46,7 +46,7 @@ public class SecondaryDataSourceConfig {
      * @return secondaryDataSource DataSource 객체
      */
     @Bean(name = "secondaryDataSource") //spring 컨테이너에 관리되는 bean 생성, 메소드 이름이 bean 의 id
-    @ConfigurationProperties(prefix = "spring.datasource.secondary") //application.properties 설정과 bean 의 속성 결정
+    @ConfigurationProperties(prefix = "spring.datasource.secondary")
     public DataSource secondaryDataSource() {
         try {
             return DataSourceBuilder.create().build();
