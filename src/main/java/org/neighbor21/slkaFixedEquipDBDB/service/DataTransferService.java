@@ -251,4 +251,5 @@ public class DataTransferService {
         entity.setCLCT_DT(Timestamp.valueOf(LocalDateTime.now())); // 수집일시로 현재 시간을 설정
         return entity;
     }
+
 }

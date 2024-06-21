@@ -10,8 +10,7 @@ WORKDIR $APP_HOME
 
 # Copy the jar file into the container
 COPY build/libs/srlk-fixedEquip-dbdb-1.0-jar-with-dependencies.jar app.jar
-
-# Copy the configuration files into the container
+# Copy the configuration files  into the container
 COPY src/main/resources/application.properties .
 COPY src/main/resources/application-test.properties .
 COPY src/main/resources/application-prod.properties .

@@ -30,7 +30,8 @@ import java.sql.Timestamp;
 @Setter
 @Table(name = "TL_VDS_PASS", schema = "srlk") // 스키마와 테이블 이름을 정확히 지정
 @BatchSize(size = 10000)
-@SQLInsert(sql = "INSERT INTO srlk.TL_VDS_PASS (EVNT_CD, EVNT_NM, INSTLLC_NM, RGSPH_ID, RGSPH_NM, SPEED, VHCL_CLSF, VHCL_CLSFGRP, VHCL_CLSFNM, CAMERA_ID, PASSVHCL_ID, PASS_DT, CLCT_DT) " +
+@SQLInsert(sql = "INSERT INTO srlk.TL_VDS_PASS " +
+        "(CLCT_DT, EVNT_CD, EVNT_NM, INSTLLC_NM, RGSPH_ID, RGSPH_NM, SPEED, VHCL_CLSF, VHCL_CLSFGRP, VHCL_CLSFNM, CAMERA_ID, PASSVHCL_ID, PASS_DT) " +
         "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) " +
         "ON CONFLICT (PASS_DT, CAMERA_ID, PASSVHCL_ID) DO NOTHING")
 public class TL_VDS_PASS {
@@ -38,17 +39,17 @@ public class TL_VDS_PASS {
     @EmbeddedId
     private TL_VDS_PASSKey tlVdsPassPK;
 
+    @Column(name = "CLCT_DT")
+    private Timestamp CLCT_DT;
+
+    @Column(name = "EVNT_CD")
+    private String EVNT_CD;
+
+    @Column(name = "EVNT_NM")
+    private String EVNT_NM;
+
     @Column(name = "INSTLLC_NM")
     private String INSTLLC_NM;
-
-    @Column(name = "VHCL_CLSF")
-    private String VHCL_CLSF;
-
-    @Column(name = "VHCL_CLSFNM")
-    private String VHCL_CLSFNM;
-
-    @Column(name = "VHCL_CLSFGRP")
-    private String VHCL_CLSFGRP;
 
     @Column(name = "RGSPH_ID")
     private String RGSPH_ID;
@@ -59,12 +60,14 @@ public class TL_VDS_PASS {
     @Column(name = "SPEED")
     private BigDecimal SPEED;
 
-    @Column(name = "EVNT_CD")
-    private String EVNT_CD;
+    @Column(name = "VHCL_CLSF")
+    private String VHCL_CLSF;
 
-    @Column(name = "EVNT_NM")
-    private String EVNT_NM;
+    @Column(name = "VHCL_CLSFGRP")
+    private String VHCL_CLSFGRP;
 
-    @Column(name = "CLCT_DT")
-    private Timestamp CLCT_DT;
+    @Column(name = "VHCL_CLSFNM")
+    private String VHCL_CLSFNM;
+
+
 }

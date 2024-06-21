@@ -49,6 +49,3 @@ public class TL_VDS_PASSKey implements Serializable {
         this.PASSVHCL_ID = PASSVHCL_ID;
     }
 }
-
-
-
