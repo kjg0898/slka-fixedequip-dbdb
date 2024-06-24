@@ -18,7 +18,7 @@ import java.sql.Timestamp;
  * fileName       : TL_VDS_PASS.java
  * author         : kjg08
  * date           : 2024-04-05
- * description    : 엔티티 목록() //데이터를 적재해야 하는 db
+ * description    : 엔티티 목록() //데이터를 적재해야 하는 db  Hibernate Query Language (HQL): Hibernate에서 사용하는 객체 지향 쿼리 언어.
  * ===========================================================
  * DATE              AUTHOR             NOTE
  * -----------------------------------------------------------

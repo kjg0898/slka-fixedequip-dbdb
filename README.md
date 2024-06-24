@@ -12,7 +12,7 @@ SLKA-FixedEquip-DBDB 프로젝트는 PostgreSQL 데이터베이스를 사용하�
 - **Resilience4j**: 재시도 로직 및 지수 백오프를 구현하기 위해 사용됩니다.
 - **HikariCP**: 고성능 JDBC Connection Pool을 제공하여 데이터베이스 연결을 효율적으로 관리합니다.
 - **Lombok**: 반복되는 코드 생성을 줄이기 위해 사용됩니다.
-
+- **Hibernate**: Hibernate Query Language (HQL): Hibernate에서 사용하는 객체 지향 쿼리 언어.
 ## 프로젝트 구조
 src/main/java
 |-- org/neighbor21/slkaFixedEquipDBDB

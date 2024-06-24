@@ -14,7 +14,7 @@ import java.util.List;
  * fileName       : TmsTrackingReposit.java
  * author         : kjg08
  * date           : 2024-04-08
- * description    : Tms_Tracking 엔티티에 대한 JPA 리포지토리 인터페이스. 이 인터페이스는 데이터베이스와 상호작용하여 Tms_Tracking 엔티티의 CRUD 작업을 처리합니다.
+ * description    : Tms_Tracking 엔티티에 대한 JPA 리포지토리 인터페이스. 이 인터페이스는 데이터베이스와 상호작용하여 Tms_Tracking 엔티티의 CRUD 작업을 처리합니다. Spring Data JPA 어노테이션 JPQL 사용
  * ===========================================================
  * DATE              AUTHOR             NOTE
  * -----------------------------------------------------------
@@ -29,6 +29,7 @@ public interface TmsTrackingReposit extends JpaRepository<Tms_Tracking, Tms_Trac
      *
      * @param lastQueried 마지막 조회 시간
      * @return 새로운 Tms_Tracking 데이터 리스트
+     * jpql
      */
     @Query("SELECT t FROM Tms_Tracking t WHERE t.tmsTrackingPK.timeStamp > :lastQueried")
     List<Tms_Tracking> findNewDataSince(LocalDateTime lastQueried);

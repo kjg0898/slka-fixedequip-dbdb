@@ -31,6 +31,7 @@ public interface TlVdsPassReposit extends JpaRepository<TL_VDS_PASS, TL_VDS_PASS
      *
      * @param keys 조회할 키 세트
      * @return 존재하는 키 세트
+     * jpql
      */
     @Query("SELECT t.tlVdsPassPK FROM TL_VDS_PASS t WHERE t.tlVdsPassPK IN :keys")
     Set<TL_VDS_PASSKey> findExistingKeys(@Param("keys") Set<TL_VDS_PASSKey> keys);
