@@ -1,0 +1,18 @@
+
+
+services:
+  app:
+    image: 211.189.132.16:5000/srlk/neighbor/srlk-fixedequip-dbdb:0.1
+    container_name: srlk-fixedequip-dbdb
+    restart: always
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+    ports:
+      - "18091:18091"
+    volumes:
+      - /data/srlk_logs/srlk-fixedEquip-dbdb-logs/:/was/fixedEquip
+    logging:
+      driver: json-file
+      options:
+        max-size: "500m"
+        max-file: "30"
