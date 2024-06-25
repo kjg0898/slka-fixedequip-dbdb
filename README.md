@@ -49,6 +49,11 @@ src/main/java
 | |-- ParsingUtil.java
 |-- SlkafixedequipdbdbApplication.java
 
+
+## 시퀀스 다이어그램
+![img.png](img.png)
+
+
 ## 주요 클래스 및 구성 요소
 
 ### 1. Constants.java
