@@ -71,20 +71,15 @@ public class DataTransferService {
         long totalBatchInsertTime = 0;
         long totalRetryTime = 0;
         long totalRecordTime = 0;
-        long totalFlushTime = 0;
-        long totalValidationTime = 0;
 
         for (int i = 0; i < newDataList.size(); i++) {
             Tms_Tracking sourceData = newDataList.get(i);
             long recordStartTime = System.currentTimeMillis();
             try {
                 // 데이터 유효성 검사
-                long validationStartTime = System.currentTimeMillis();
                 if (!validateData(sourceData)) {
                     continue;
                 }
-                long validationEndTime = System.currentTimeMillis();
-                totalValidationTime += (validationEndTime - validationStartTime);
 
                 // 엔티티를 DTO로 변환
                 long conversionStartTime = System.currentTimeMillis();
@@ -134,22 +129,15 @@ public class DataTransferService {
         }
 
         // EntityManager 플러시 및 클리어
-        long flushStartTime = System.currentTimeMillis();
         secondaryEntityManager.flush();
         secondaryEntityManager.clear();
-        long flushEndTime = System.currentTimeMillis();
-        totalFlushTime += (flushEndTime - flushStartTime);
 
         long endTime = System.currentTimeMillis(); // 종료 시간
         long totalDuration = endTime - startTime; // 소요 시간 (밀리초)
 
         logger.info("Data transfer completed for {} records in {} ms", totalRecords, totalDuration);
-        logger.info("Total validation time: {} ms", totalValidationTime);
-        logger.info("Total conversion time: {} ms", totalConversionTime);
-        logger.info("Total batch insert time: {} ms", totalBatchInsertTime);
-        logger.info("Total retry time: {} ms", totalRetryTime);
+        logger.info("Total conversion time: {} ms, Total batch insert time: {} ms, Total retry time: {} ms", totalConversionTime, totalBatchInsertTime, totalRetryTime);
         logger.info("Total record processing time: {} ms", totalRecordTime);
-        logger.info("Total flush and clear time: {} ms", totalFlushTime);
 
         return transferSuccessful; // 데이터 전송 성공 여부 반환
     }
