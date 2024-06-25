@@ -55,7 +55,7 @@ public class SaveVdsEntity {
             List<Tms_Tracking> newDataList = fetchDataWithRetry(lastQueried); // 마지막 조회 시간 이후의 데이터 조회
             if (!newDataList.isEmpty()) {
                 logger.info("--------------------------------------------------------------------------------------------");
-                logger.info("{} 시간 이후의 데이터를 조회 후 변환 Start", lastQueried);
+                logger.info("Lookup and convert data after time {} Start", lastQueried);
                 // 새로운 데이터가 있을 경우, 데이터 변환 및 저장 처리
                 boolean isTransferSuccessful = dataTransferService.transferData(newDataList); // DataTransferService에 새로운 데이터를 전달하여 처리
                 if (isTransferSuccessful) {
@@ -67,7 +67,7 @@ public class SaveVdsEntity {
                     lastQueriedService.updateLastQueriedDateTime(latestTimestamp);
                 }
                 long endTime = System.currentTimeMillis();
-                logger.info("모든 처리 완료 시간: {} ms", endTime - programeStartTime);
+                logger.info("Completed Insert to TL_VDS_PASS successfully in : {} ms", endTime - programeStartTime);
                 logger.info("--------------------------------------------------------------------------------------------");
 
             } else {
