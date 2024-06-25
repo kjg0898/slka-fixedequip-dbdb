@@ -44,7 +44,7 @@ public class SaveVdsEntity {
     private String scheduleCron;
 
     /**
-     * 일정한 간격(5분)으로 새로운 데이터를 조회하여 처리하는 메소드.
+     * 일정한 간격 으로 새로운 데이터를 조회하여 처리하는 메소드.
      * 마지막 조회 시간 이후의 데이터를 조회하여 변환 및 저장 작업을 수행함.
      */
     @Scheduled(cron = "${schedule.cron}")
