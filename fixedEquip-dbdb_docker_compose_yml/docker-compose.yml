@@ -6,7 +6,7 @@ services:
     container_name: srlk-fixedequip-dbdb
     restart: always
     environment:
-      - SPRING_PROFILES_ACTIVE=prod
+      - SPRING_PROFILES_ACTIVE=real
     ports:
       - "18091:18091"
     volumes:

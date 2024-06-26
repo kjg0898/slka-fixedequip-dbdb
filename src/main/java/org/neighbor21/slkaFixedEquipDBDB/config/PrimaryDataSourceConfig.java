@@ -43,7 +43,7 @@ public class PrimaryDataSourceConfig {
 
     /**
      * 기본 데이터 소스 빈을 생성. Spring 컨테이너에 의해 관리됨.
-     * application-prod.properties 파일의 spring.datasource.primary 속성에 따라 설정됨.
+     * application-real.properties 파일의 spring.datasource.primary 속성에 따라 설정됨.
      *
      * @return 기본 데이터 소스 객체
      */
