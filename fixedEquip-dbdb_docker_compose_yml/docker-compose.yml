@@ -2,7 +2,7 @@
 
 services:
   app:
-    image: 211.189.132.16:5000/srlk/neighbor/srlk-fixedequip-dbdb:0.2
+    image: 211.189.132.16:5000/srlk/neighbor/srlk-fixedequip-dbdb:0.1
     container_name: srlk-fixedequip-dbdb
     restart: always
     environment:
