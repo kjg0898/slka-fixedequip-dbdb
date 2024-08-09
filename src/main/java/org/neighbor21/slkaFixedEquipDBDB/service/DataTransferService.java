@@ -203,7 +203,7 @@ public class DataTransferService {
         keyDto.setPASSVHCL_ID(entity.getTmsTrackingPK().getTrackingID());
         dto.setTlVdsPassPK(keyDto);
         dto.setINSTLLC_NM(entity.getSiteName());
-        dto.setVHCL_CLSF(ParshingUtil.getVehicleClassification(entity.getLabelID()));
+        dto.setVHCL_CLSF(String.valueOf(entity.getLabelID()));
         dto.setVHCL_CLSFNM(entity.getLabelName());
         dto.setVHCL_CLSFGRP(String.valueOf(entity.getLabelGroup()));
         dto.setRGSPH_ID(String.valueOf(entity.getRegionID()));

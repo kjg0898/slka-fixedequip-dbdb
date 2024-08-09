@@ -13,24 +13,25 @@ package org.neighbor21.slkaFixedEquipDBDB.Util;
  */
 public class ParshingUtil {
 
-    /**
-     * 차량 분류 코드에 맞춰서 차량 종류로 분류.
-     *
-     * @param labelId 차량 분류 코드
-     * @return 차량 종류
-     */
-    public static String getVehicleClassification(int labelId) {
-        return switch (labelId) {
-            case 0 -> "승용차/SUV";
-            case 1 -> "소형버스";
-            case 2 -> "대형버스";
-            case 3 -> "트럭";
-            case 4 -> "대형 트레일러";
-            case 5 -> "오토바이/자전거";
-            case 6 -> "보행자";
-            case 8 -> "VAN/승합차/스타렉스";
-            case 9 -> "삼륜차";
-            default -> "알 수 없음";
-        };
-    }
+    // 코드 그대로 넣을거라서 주석처리함.
+//    /**
+//     * 차량 분류 코드에 맞춰서 차량 종류로 분류.
+//     *
+//     * @param labelId 차량 분류 코드
+//     * @return 차량 종류
+//     */
+//    public static String getVehicleClassification(int labelId) {
+//        return switch (labelId) {
+//            case 0 -> "승용차/SUV";
+//            case 1 -> "소형버스";
+//            case 2 -> "대형버스";
+//            case 3 -> "트럭";
+//            case 4 -> "대형 트레일러";
+//            case 5 -> "오토바이/자전거";
+//            case 6 -> "보행자";
+//            case 8 -> "VAN/승합차/스타렉스";
+//            case 9 -> "삼륜차";
+//            default -> "알 수 없음";
+//        };
+//    }
 }

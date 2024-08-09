@@ -24,13 +24,23 @@ import java.util.List;
 @Repository // Spring Data JPA 리포지토리로 등록
 public interface TmsTrackingReposit extends JpaRepository<Tms_Tracking, Tms_TrackingKey> {
 
+//    /**
+//     * 마지막 조회 시간 이후의 새로운 데이터를 조회하는 메소드.
+//     *
+//     * @param lastQueried 마지막 조회 시간
+//     * @return 새로운 Tms_Tracking 데이터 리스트
+//     * jpql (postgres 가 대소문자 구분 안할때 사용했던 쿼리)
+//     */
+//    @Query("SELECT t FROM Tms_Tracking t WHERE t.tmsTrackingPK.timeStamp > :lastQueried")
+//    List<Tms_Tracking> findNewDataSince(LocalDateTime lastQueried);
+
     /**
      * 마지막 조회 시간 이후의 새로운 데이터를 조회하는 메소드.
      *
      * @param lastQueried 마지막 조회 시간
      * @return 새로운 Tms_Tracking 데이터 리스트
-     * jpql
+     * (postgres 가 대소문자 구분 하기 시작하여 네이티브 쿼리로 사용)
      */
-    @Query("SELECT t FROM Tms_Tracking t WHERE t.tmsTrackingPK.timeStamp > :lastQueried")
+    @Query(value = "SELECT * FROM \"Tms_Tracking\" WHERE \"TimeStamp\" > :lastQueried", nativeQuery = true)
     List<Tms_Tracking> findNewDataSince(LocalDateTime lastQueried);
 }

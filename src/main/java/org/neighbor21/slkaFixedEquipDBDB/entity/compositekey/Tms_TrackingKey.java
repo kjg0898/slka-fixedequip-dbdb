@@ -27,13 +27,13 @@ import java.sql.Timestamp;
 public class Tms_TrackingKey implements Serializable {
 
     //통행 일시
-    @Column(name = "TimeStamp")
+    @Column(name = "\"TimeStamp\"")
     private Timestamp timeStamp;
     //카메라 고유 아이디
-    @Column(name = "CamID")
+    @Column(name = "\"CamID\"")
     private int camID;
     //통행 차량 고유 번호(번호판X)
-    @Column(name = "TrackingID")
+    @Column(name = "\"TrackingID\"")
     private String trackingID;
 
     // Default constructor
