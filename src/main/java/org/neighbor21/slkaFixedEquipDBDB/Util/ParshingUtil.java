@@ -13,7 +13,7 @@ package org.neighbor21.slkaFixedEquipDBDB.Util;
  */
 public class ParshingUtil {
 
-    // 코드 그대로 넣을거라서 주석처리함.
+//     코드 그대로 넣을거라서 주석처리함.
 //    /**
 //     * 차량 분류 코드에 맞춰서 차량 종류로 분류.
 //     *
