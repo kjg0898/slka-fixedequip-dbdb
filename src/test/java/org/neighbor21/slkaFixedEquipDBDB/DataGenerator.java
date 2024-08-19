@@ -1,3 +1,4 @@
+/*
 package org.neighbor21.slkaFixedEquipDBDB;
 
 import java.io.BufferedWriter;
@@ -58,3 +59,4 @@ public class DataGenerator {
         System.out.println("데이터 생성 완료. 파일 경로: " + filePath);
     }
 }
+*/

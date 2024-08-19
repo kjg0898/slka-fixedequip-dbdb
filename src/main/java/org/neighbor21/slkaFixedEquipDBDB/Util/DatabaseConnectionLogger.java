@@ -7,6 +7,8 @@ import org.springframework.context.annotation.Configuration;
 
 import javax.sql.DataSource;
 import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.sql.Statement;
 
 /**
@@ -36,11 +38,20 @@ public class DatabaseConnectionLogger {
     @PostConstruct
     private void logDatabaseConnection() {
         try (Connection conn = dataSource.getConnection();
-             Statement stmt = conn.createStatement()) {
-            stmt.executeQuery("SELECT 1");
-            logger.info("Database connection test SUCCESSFUL");
+             Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery("SELECT 1")) { // 연결확인을 위해서 1 호출
+
+            if (rs.next()) {
+                logger.info("Database connection test SUCCESSFUL");
+            } else {
+                logger.warn("Database connection test query returned no results");
+            }
+        } catch (SQLException e) {
+            logger.error("Database connection test FAILED due to SQL error", e);
+        } catch (SecurityException e) {
+            logger.error("Database connection test FAILED due to security error", e);
         } catch (Exception e) {
-            logger.error("Database connection test FAILED", e);
+            logger.error("Database connection test FAILED due to unexpected error", e);
         }
     }
 }

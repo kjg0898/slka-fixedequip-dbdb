@@ -1,7 +1,9 @@
 package org.neighbor21.slkaFixedEquipDBDB.service;
 
+import jakarta.persistence.EntityExistsException;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
+import jakarta.persistence.PersistenceException;
 import org.neighbor21.slkaFixedEquipDBDB.config.Constants;
 import org.neighbor21.slkaFixedEquipDBDB.entity.secondary.TL_VDS_PASS;
 import org.slf4j.Logger;
@@ -10,6 +12,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionException;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
 
@@ -59,16 +62,19 @@ public class BatchService {
                     for (TL_VDS_PASS entity : batchList) {
                         try {
                             secondaryEntityManager.persist(entity);
-                        } catch (Exception e) {
+                        } catch (EntityExistsException e) {
                             logger.warn("중복 키 오류 발생, 엔티티 키 {}: {}", entity.getTlVdsPassPK(), e.getMessage());
+                        } catch (PersistenceException e) {
+                            logger.warn("엔티티 저장 중 오류 발생, 엔티티 키 {}: {}", entity.getTlVdsPassPK(), e.getMessage());
                         }
                     }
                     secondaryEntityManager.flush();
                     secondaryEntityManager.clear();
-                } catch (Exception e) {
+                } catch (PersistenceException e) {
                     logger.warn("배치 삽입 시도 실패, 인덱스 {}에서 {}까지: {}", i, end, e.getMessage(), e);
-                    // 재시도 로직 추가
-                    retryBatchInsert(batchList);
+                    retryBatchInsert(batchList); // 재시도 로직 추가
+                } catch (TransactionException e) {
+                    logger.error("트랜잭션 오류 발생, 인덱스 {}에서 {}까지: {}", i, end, e.getMessage(), e);
                 }
             }
         });
@@ -84,14 +90,18 @@ public class BatchService {
             for (TL_VDS_PASS entity : batchList) {
                 try {
                     secondaryEntityManager.persist(entity);
-                } catch (Exception e) {
-                    logger.warn("중복 키 오류 발생, 엔티티 키 {}: {}", entity.getTlVdsPassPK(), e.getMessage());
+                } catch (EntityExistsException e) {
+                    logger.warn("재시도 중 중복 키 오류 발생, 엔티티 키 {}: {}", entity.getTlVdsPassPK(), e.getMessage());
+                } catch (PersistenceException e) {
+                    logger.warn("재시도 중 엔티티 저장 오류 발생, 엔티티 키 {}: {}", entity.getTlVdsPassPK(), e.getMessage());
                 }
             }
             secondaryEntityManager.flush();
             secondaryEntityManager.clear();
-        } catch (Exception e) {
-            logger.error("재시도 실패: {}", e.getMessage(), e);
+        } catch (PersistenceException e) {
+            logger.error("재시도 중 영속성 오류 발생: {}", e.getMessage(), e);
+        } catch (TransactionException e) {
+            logger.error("재시도 중 트랜잭션 오류 발생: {}", e.getMessage(), e);
         }
     }
 }

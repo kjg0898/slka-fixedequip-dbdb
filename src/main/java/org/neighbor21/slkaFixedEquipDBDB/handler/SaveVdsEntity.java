@@ -1,5 +1,6 @@
 package org.neighbor21.slkaFixedEquipDBDB.handler;
 
+import jakarta.annotation.PostConstruct;
 import org.neighbor21.slkaFixedEquipDBDB.entity.primary.Tms_Tracking;
 import org.neighbor21.slkaFixedEquipDBDB.jpareposit.primaryRepo.TmsTrackingReposit;
 import org.neighbor21.slkaFixedEquipDBDB.service.DataTransferService;
@@ -8,9 +9,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.dao.DataAccessException;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
+import java.sql.SQLException;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -44,10 +47,26 @@ public class SaveVdsEntity {
     private String scheduleCron;
 
     /**
+     * 애플리케이션 실행시 프로세스 한번 실행
+     */
+    @PostConstruct
+    public void init() {
+        logger.info("Executing initial data fetch on application startup");
+        fetchNewData();
+    }
+    /**
+     * 일정한 간격으로 프로세스 실행
+     */
+    @Scheduled(cron = "${schedule.cron}")
+    public void scheduledFetchNewData() {
+        logger.info("Executing scheduled data fetch");
+        fetchNewData();
+    }
+
+    /**
      * 일정한 간격 으로 새로운 데이터를 조회하여 처리하는 메소드.
      * 마지막 조회 시간 이후의 데이터를 조회하여 변환 및 저장 작업을 수행함.
      */
-    @Scheduled(cron = "${schedule.cron}")
     public void fetchNewData() {
         long programeStartTime = System.currentTimeMillis();
         try {
@@ -73,11 +92,14 @@ public class SaveVdsEntity {
             } else {
                 logger.info("새로운 데이터를 찾지 못했습니다.");
             }
+        } catch (DataAccessException e) {
+            logger.error("데이터 액세스 중 오류 발생: ", e);
+        } catch (RuntimeException e) {
+            logger.error("데이터 처리 중 런타임 오류 발생: ", e);
         } catch (Exception e) {
-            logger.error("데이터 처리 중 예외 발생: ", e);
+            logger.error("데이터 처리 중 예상치 못한 오류 발생: ", e);
         }
     }
-
     /**
      * 마지막 조회 시간 이후의 데이터를 재시도 로직을 포함하여 가져오는 메소드.
      *

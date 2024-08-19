@@ -3,6 +3,7 @@ package org.neighbor21.slkaFixedEquipDBDB.service;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.jdbc.datasource.lookup.DataSourceLookupFailureException;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
@@ -10,6 +11,7 @@ import org.springframework.stereotype.Component;
 import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.sql.Statement;
 
 /**
@@ -28,12 +30,10 @@ import java.sql.Statement;
 @Component // Spring의 컴포넌트로 등록
 public class DatabaseConnectionKeeper {
     private static final Logger logger = LoggerFactory.getLogger(DatabaseConnectionKeeper.class);
-
-    private final DataSource secondaryDataSource;
-    private final DataSource primaryDataSource;
-
     private static final int MAX_RETRIES = 5;
     private static final long RETRY_DELAY_MS = 5000; // 5초
+    private final DataSource secondaryDataSource;
+    private final DataSource primaryDataSource;
 
     /**
      * 두 개의 DataSource를 주입받는 생성자.
@@ -78,21 +78,31 @@ public class DatabaseConnectionKeeper {
                  Statement stmt = conn.createStatement();
                  ResultSet rs = stmt.executeQuery("SELECT 1")) {
                 if (rs.next()) {
-                    int result = rs.getInt(1); // SELECT 1 쿼리의 결과를 가져옴
+                    int result = rs.getInt(1);
                     logger.info("{} data source keep-alive query executed successfully. Result: {}", dataSourceName, result);
                     return;
                 } else {
                     logger.warn("{} data source keep-alive query executed but didn't return a result.", dataSourceName);
                 }
-            } catch (Exception e) {
-                logger.error("Failed to keep alive {} data source: {}", dataSourceName, e.getMessage(), e);
+            } catch (SQLException e) {
+                logger.error("SQL error occurred while keeping alive {} data source: {}", dataSourceName, e.getMessage(), e);
                 retries++;
-                try {
-                    Thread.sleep(RETRY_DELAY_MS);
-                } catch (InterruptedException interruptedException) {
-                    logger.error("Retry delay interrupted", interruptedException);
-                    Thread.currentThread().interrupt();
-                }
+            } catch (DataSourceLookupFailureException e) {
+                logger.error("Data source error occurred while keeping alive {} data source: {}", dataSourceName, e.getMessage(), e);
+                retries++;
+            } catch (RuntimeException e) {
+                logger.error("Unexpected runtime error occurred while keeping alive {} data source: {}", dataSourceName, e.getMessage(), e);
+                retries++;
+            } catch (Exception e) {
+                logger.error("Unexpected error occurred while keeping alive {} data source: {}", dataSourceName, e.getMessage(), e);
+                retries++;
+            }
+
+            try {
+                Thread.sleep(RETRY_DELAY_MS);
+            } catch (InterruptedException interruptedException) {
+                logger.error("Retry delay interrupted", interruptedException);
+                Thread.currentThread().interrupt();
             }
         }
         logger.error("Failed to keep alive {} data source after {} retries", dataSourceName, MAX_RETRIES);

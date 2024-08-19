@@ -13,6 +13,7 @@ import org.neighbor21.slkaFixedEquipDBDB.jpareposit.secondaryRepo.TlVdsPassRepos
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataAccessException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.orm.jpa.JpaSystemException;
 import org.springframework.stereotype.Service;
@@ -97,16 +98,30 @@ public class DataTransferService {
                     long batchInsertEndTime = System.currentTimeMillis();
                     totalBatchInsertTime += (batchInsertEndTime - batchInsertStartTime);
                 }
-            } catch (Exception e) {
-                // 예외 발생 시 재시도 로직 수행
-                logger.error("Initial transfer failed for tracking PK {}, attempting retry...", sourceData.getTmsTrackingPK());
+            } catch (DataAccessException e) {
+                logger.error("데이터 액세스 오류 발생. tracking PK {}: {}", sourceData.getTmsTrackingPK(), e.getMessage());
                 long retryStartTime = System.currentTimeMillis();
                 boolean retrySuccess = retryFailedData(sourceData, 0);
                 long retryEndTime = System.currentTimeMillis();
                 totalRetryTime += (retryEndTime - retryStartTime);
                 if (!retrySuccess) {
-                    transferSuccessful = false; // 전송 실패로 설정
+                    transferSuccessful = false;
                 }
+            } catch (IllegalArgumentException e) {
+                logger.error("잘못된 인자 오류 발생. tracking PK {}: {}", sourceData.getTmsTrackingPK(), e.getMessage());
+                transferSuccessful = false;
+            } catch (RuntimeException e) {
+                logger.error("런타임 오류 발생. tracking PK {}: {}", sourceData.getTmsTrackingPK(), e.getMessage());
+                long retryStartTime = System.currentTimeMillis();
+                boolean retrySuccess = retryFailedData(sourceData, 0);
+                long retryEndTime = System.currentTimeMillis();
+                totalRetryTime += (retryEndTime - retryStartTime);
+                if (!retrySuccess) {
+                    transferSuccessful = false;
+                }
+            } catch (Exception e) {
+                logger.error("예상치 못한 오류 발생. tracking PK {}: {}", sourceData.getTmsTrackingPK(), e.getMessage());
+                transferSuccessful = false;
             }
 
             long recordEndTime = System.currentTimeMillis();
