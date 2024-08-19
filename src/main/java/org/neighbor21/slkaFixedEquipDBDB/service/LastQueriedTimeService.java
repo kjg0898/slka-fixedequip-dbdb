@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 import java.io.*;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 
 /**
  * packageName    : org.neighbor21.slkaFixedEquipDBDB.service
@@ -23,7 +24,7 @@ import java.time.format.DateTimeFormatter;
 public class LastQueriedTimeService {
     private static final Logger logger = LoggerFactory.getLogger(LastQueriedTimeService.class);
     private static final String FILE_PATH = "lastQueriedTime.txt";
-    private LocalDateTime lastQueriedDateTime = LocalDateTime.now().minusMinutes(5);
+    private LocalDateTime lastQueriedDateTime;  // 초기값 제거
 
     /**
      * 생성자. 서비스 초기화 시 마지막 조회 시간을 파일에서 읽어옴.
@@ -31,6 +32,7 @@ public class LastQueriedTimeService {
     public LastQueriedTimeService() {
         readLastQueriedDateTime();
     }
+
 
     /**
      * 마지막 조회 시간을 업데이트하고 파일에 저장.
@@ -54,19 +56,17 @@ public class LastQueriedTimeService {
 
         try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
             String dateTimeString = reader.readLine();
-            if (dateTimeString != null) {
+            if (dateTimeString != null && !dateTimeString.trim().isEmpty()) {
                 this.lastQueriedDateTime = LocalDateTime.parse(dateTimeString, DateTimeFormatter.ISO_DATE_TIME);
+            } else {
+                throw new IOException("Empty or invalid file content");
             }
-        } catch (IOException e) {
+        } catch (IOException | DateTimeParseException e) {
             logger.error("Failed to read last queried date time from file. Using default value.", e);
-            this.lastQueriedDateTime = LocalDateTime.now().minusMinutes(5);
-            createFileWithDefaultTime();
-        } catch (Exception e) {
-            logger.error("Unexpected error occurred while reading last queried date time from file.", e);
-            this.lastQueriedDateTime = LocalDateTime.now().minusMinutes(5);
             createFileWithDefaultTime();
         }
     }
+
 
     /**
      * 마지막 조회 시간을 파일에 저장.
@@ -85,10 +85,10 @@ public class LastQueriedTimeService {
      * 파일이 없거나 읽기 실패 시 기본 시간을 설정하고 파일을 생성.
      */
     private void createFileWithDefaultTime() {
-        this.lastQueriedDateTime = LocalDateTime.now().minusMinutes(5);
+        this.lastQueriedDateTime = LocalDateTime.now().minusYears(10);
         writeLastQueriedDateTime();
+        logger.debug("Created new file with default time set to 10 years ago: {}", this.lastQueriedDateTime);
     }
-
     /**
      * 마지막 조회 시간을 반환.
      *
