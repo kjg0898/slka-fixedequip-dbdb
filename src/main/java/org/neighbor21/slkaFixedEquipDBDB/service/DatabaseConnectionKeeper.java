@@ -85,7 +85,7 @@ public class DatabaseConnectionKeeper {
                     logger.warn("{} data source keep-alive query executed but didn't return a result.", dataSourceName);
                 }
             } catch (SQLException e) {
-                logger.error("SQL error occurred while keeping alive {} data source: {}", dataSourceName, e.getMessage(), e);
+                logger.error("SQL error occurred while keeping alive {}", dataSourceName, e);
                 retries++;
             } catch (DataSourceLookupFailureException e) {
                 logger.error("Data source error occurred while keeping alive {} data source: {}", dataSourceName, e.getMessage(), e);
