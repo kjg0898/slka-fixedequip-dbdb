@@ -88,13 +88,13 @@ public class DatabaseConnectionKeeper {
                 logger.error("SQL error occurred while keeping alive {}", dataSourceName, e);
                 retries++;
             } catch (DataSourceLookupFailureException e) {
-                logger.error("Data source error occurred while keeping alive {} data source: {}", dataSourceName, e.getMessage(), e);
+                logger.error("Data source error occurred while keeping alive {}", dataSourceName, e);
                 retries++;
             } catch (RuntimeException e) {
                 logger.error("Unexpected runtime error occurred while keeping alive {}", dataSourceName, e);
                 retries++;
             } catch (Exception e) {
-                logger.error("Unexpected error occurred while keeping alive {} data source: {}", dataSourceName, e.getMessage(), e);
+                logger.error("Unexpected error occurred while keeping alive {} ", dataSourceName, e);
                 retries++;
             }
 
