@@ -63,9 +63,9 @@ public class BatchService {
                         try {
                             secondaryEntityManager.persist(entity);
                         } catch (EntityExistsException e) {
-                            logger.warn("중복 키 오류 발생, 엔티티 키 {}: {}", entity.getTlVdsPassPK(), e.getMessage());
+                            logger.warn("중복 키 오류 발생 {}", entity.getTlVdsPassPK());
                         } catch (PersistenceException e) {
-                            logger.warn("엔티티 저장 중 오류 발생, 엔티티 키 {}: {}", entity.getTlVdsPassPK(), e.getMessage());
+                            logger.warn("엔티티 저장 중 오류 발생 {}", entity.getTlVdsPassPK());
                         }
                     }
                     secondaryEntityManager.flush();
@@ -91,9 +91,9 @@ public class BatchService {
                 try {
                     secondaryEntityManager.persist(entity);
                 } catch (EntityExistsException e) {
-                    logger.warn("재시도 중 중복 키 오류 발생, 엔티티 키 {}: {}", entity.getTlVdsPassPK(), e.getMessage());
+                    logger.warn("재시도 중 중복 키 오류 발생 {}", entity.getTlVdsPassPK());
                 } catch (PersistenceException e) {
-                    logger.warn("재시도 중 엔티티 저장 오류 발생, 엔티티 키 {}: {}", entity.getTlVdsPassPK(), e.getMessage());
+                    logger.warn("재시도 중 엔티티 저장 오류 발생 {}", entity.getTlVdsPassPK());
                 }
             }
             secondaryEntityManager.flush();

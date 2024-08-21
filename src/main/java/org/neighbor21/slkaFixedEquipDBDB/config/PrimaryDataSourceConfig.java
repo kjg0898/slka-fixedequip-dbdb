@@ -53,9 +53,12 @@ public class PrimaryDataSourceConfig {
     public DataSource primaryDataSource() {
         try {
             return DataSourceBuilder.create().build();
-        } catch (Exception e) {
-            logger.severe("기본 데이터 소스 생성 중 오류 발생: " + e.getMessage());
-            throw new RuntimeException("기본 데이터 소스를 생성할 수 없습니다.", e);
+        } catch (IllegalArgumentException e) {
+            logger.severe("기본 데이터 소스 설정 오류");
+            throw new DataSourceConfigurationException("기본 데이터 소스 설정 오류", e);
+        } catch (RuntimeException e) {
+            logger.severe("기본 데이터 소스 생성 중 예상치 못한 오류");
+            throw new DataSourceConfigurationException("기본 데이터 소스 생성 중 예상치 못한 오류", e);
         }
     }
 
@@ -76,9 +79,12 @@ public class PrimaryDataSourceConfig {
                     .packages("org.neighbor21.slkaFixedEquipDBDB.entity.primary")
                     .persistenceUnit("primary")
                     .build();
-        } catch (Exception e) {
-            logger.severe("기본 EntityManagerFactory 생성 중 오류 발생: " + e.getMessage());
-            throw new RuntimeException("기본 EntityManagerFactory를 생성할 수 없습니다.", e);
+        } catch (IllegalArgumentException e) {
+            logger.severe("기본 EntityManagerFactory 설정 오류");
+            throw new EntityManagerFactoryConfigurationException("기본 EntityManagerFactory 설정 오류", e);
+        } catch (RuntimeException e) {
+            logger.severe("기본 EntityManagerFactory 생성 중 예상치 못한 오류");
+            throw new EntityManagerFactoryConfigurationException("기본 EntityManagerFactory 생성 중 예상치 못한 오류", e);
         }
     }
 
@@ -96,9 +102,31 @@ public class PrimaryDataSourceConfig {
             JpaTransactionManager transactionManager = new JpaTransactionManager();
             transactionManager.setEntityManagerFactory(primaryEntityManagerFactory.getObject());
             return transactionManager;
-        } catch (Exception e) {
-            logger.severe("기본 트랜잭션 관리자 생성 중 오류 발생: " + e.getMessage());
-            throw new RuntimeException("기본 트랜잭션 관리자를 생성할 수 없습니다.", e);
+        } catch (IllegalArgumentException e) {
+            logger.severe("기본 트랜잭션 관리자 설정 오류");
+            throw new TransactionManagerConfigurationException("기본 트랜잭션 관리자 설정 오류", e);
+        } catch (RuntimeException e) {
+            logger.severe("기본 트랜잭션 관리자 생성 중 예상치 못한 오류");
+            throw new TransactionManagerConfigurationException("기본 트랜잭션 관리자 생성 중 예상치 못한 오류", e);
+        }
+    }
+
+    // 사용자 정의 예외 클래스들
+    public static class DataSourceConfigurationException extends RuntimeException {
+        public DataSourceConfigurationException(String message, Throwable cause) {
+            super(message, cause);
+        }
+    }
+
+    public static class EntityManagerFactoryConfigurationException extends RuntimeException {
+        public EntityManagerFactoryConfigurationException(String message, Throwable cause) {
+            super(message, cause);
+        }
+    }
+
+    public static class TransactionManagerConfigurationException extends RuntimeException {
+        public TransactionManagerConfigurationException(String message, Throwable cause) {
+            super(message, cause);
         }
     }
 }

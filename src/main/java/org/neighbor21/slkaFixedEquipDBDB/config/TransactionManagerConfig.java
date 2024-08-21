@@ -39,11 +39,15 @@ public class TransactionManagerConfig {
             @Qualifier("primaryEntityManagerFactory") EntityManagerFactory emf) {
         try {
             return new JpaTransactionManager(emf);
-        } catch (Exception e) {
-            logger.severe("Primary 트랜잭션 관리자 생성 중 오류 발생: " + e.getMessage());
-            throw new RuntimeException("Primary 트랜잭션 관리자를 생성할 수 없습니다.", e);
+        } catch (IllegalArgumentException e) {
+            logger.severe("Primary 트랜잭션 관리자 설정 오류");
+            throw new TransactionManagerConfigurationException("Primary 트랜잭션 관리자 설정 오류", e);
+        } catch (RuntimeException e) {
+            logger.severe("Primary 트랜잭션 관리자 생성 중 예상치 못한 오류");
+            throw new TransactionManagerConfigurationException("Primary 트랜잭션 관리자 생성 중 예상치 못한 오류", e);
         }
     }
+
 
     /**
      * Secondary 트랜잭션 관리자를 생성.
@@ -56,9 +60,18 @@ public class TransactionManagerConfig {
             @Qualifier("secondaryEntityManagerFactory") EntityManagerFactory emf) {
         try {
             return new JpaTransactionManager(emf);
-        } catch (Exception e) {
-            logger.severe("Secondary 트랜잭션 관리자 생성 중 오류 발생: " + e.getMessage());
-            throw new RuntimeException("Secondary 트랜잭션 관리자를 생성할 수 없습니다.", e);
+        } catch (IllegalArgumentException e) {
+            logger.severe("Secondary 트랜잭션 관리자 설정 오류");
+            throw new TransactionManagerConfigurationException("Secondary 트랜잭션 관리자 설정 오류", e);
+        } catch (RuntimeException e) {
+            logger.severe("Secondary 트랜잭션 관리자 생성 중 예상치 못한 오류");
+            throw new TransactionManagerConfigurationException("Secondary 트랜잭션 관리자 생성 중 예상치 못한 오류", e);
+        }
+    }
+    // 사용자 정의 예외 클래스
+    public static class TransactionManagerConfigurationException extends RuntimeException {
+        public TransactionManagerConfigurationException(String message, Throwable cause) {
+            super(message, cause);
         }
     }
 }

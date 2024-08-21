@@ -99,7 +99,7 @@ public class DataTransferService {
                     totalBatchInsertTime += (batchInsertEndTime - batchInsertStartTime);
                 }
             } catch (DataAccessException e) {
-                logger.error("데이터 액세스 오류 발생. tracking PK {}: {}", sourceData.getTmsTrackingPK(), e.getMessage());
+                logger.error("데이터 액세스 오류 발생. tracking PK {}", sourceData.getTmsTrackingPK());
                 long retryStartTime = System.currentTimeMillis();
                 boolean retrySuccess = retryFailedData(sourceData, 0);
                 long retryEndTime = System.currentTimeMillis();
@@ -108,10 +108,10 @@ public class DataTransferService {
                     transferSuccessful = false;
                 }
             } catch (IllegalArgumentException e) {
-                logger.error("잘못된 인자 오류 발생. tracking PK {}: {}", sourceData.getTmsTrackingPK(), e.getMessage());
+                logger.error("잘못된 인자 오류 발생. tracking PK {}", sourceData.getTmsTrackingPK());
                 transferSuccessful = false;
             } catch (RuntimeException e) {
-                logger.error("런타임 오류 발생. tracking PK {}: {}", sourceData.getTmsTrackingPK(), e.getMessage());
+                logger.error("런타임 오류 발생. tracking PK {}", sourceData.getTmsTrackingPK());
                 long retryStartTime = System.currentTimeMillis();
                 boolean retrySuccess = retryFailedData(sourceData, 0);
                 long retryEndTime = System.currentTimeMillis();
@@ -120,7 +120,7 @@ public class DataTransferService {
                     transferSuccessful = false;
                 }
             } catch (Exception e) {
-                logger.error("예상치 못한 오류 발생. tracking PK {}: {}", sourceData.getTmsTrackingPK(), e.getMessage());
+                logger.error("예상치 못한 오류 발생. tracking PK {}", sourceData.getTmsTrackingPK());
                 transferSuccessful = false;
             }
 
@@ -193,10 +193,10 @@ public class DataTransferService {
             retryLogger.info("Retry successful for tracking PK {}", failedData.getTmsTrackingPK());
             return true;
         } catch (DataIntegrityViolationException e) {
-            logger.error("Retry {} failed for tracking PK {} due to constraint violation, skipping record. Error: {}", retryCount, failedData.getTmsTrackingPK(), e.getMessage());
+            logger.error("Retry {} failed for tracking PK {} due to constraint violation, skipping record.", retryCount, failedData.getTmsTrackingPK());
             return false;
         } catch (JpaSystemException e) {
-            retryLogger.error("Retry {} failed for tracking PK {}, attempting retry again... Error: {}", retryCount, failedData.getTmsTrackingPK(), e.getMessage());
+            retryLogger.error("Retry {} failed for tracking PK {}, attempting retry again...", retryCount, failedData.getTmsTrackingPK());
             return retryFailedData(failedData, retryCount + 1);
         } catch (Exception e) {
             retryLogger.error("Retry {} failed for tracking PK {}, attempting retry again... Error: ", retryCount, failedData.getTmsTrackingPK(), e);

@@ -114,20 +114,21 @@ public class SaveVdsEntity {
         while (retryCount <= maxRetries) {
             try {
                 return tmsTrackingRepository.findNewDataSince(lastQueried);
-            } catch (Exception e) {
-                logger.error("데이터 조회 실패, 재시도 중... (시도 횟수: {})", retryCount, e);
+            } catch (DataAccessException e) {
+                logger.error("데이터베이스 액세스 오류, 재시도 중... (시도 횟수: {})", retryCount);
                 retryCount++;
                 if (retryCount > maxRetries) {
-                    throw e; // 최대 재시도 횟수 초과 시 예외 발생
+                    throw new RuntimeException("데이터 조회 실패", e);
                 }
                 try {
                     Thread.sleep(retryDelay);
                 } catch (InterruptedException interruptedException) {
-                    logger.error("재시도 대기 중 인터럽트 발생", interruptedException);
+                    logger.error("재시도 대기 중 인터럽트 발생");
                     Thread.currentThread().interrupt();
+                    return List.of();
                 }
             }
         }
-        return List.of(); // 실패 시 빈 리스트 반환
+        return List.of();
     }
 }

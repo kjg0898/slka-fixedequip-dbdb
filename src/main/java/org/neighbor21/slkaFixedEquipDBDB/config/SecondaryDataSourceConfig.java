@@ -50,9 +50,12 @@ public class SecondaryDataSourceConfig {
     public DataSource secondaryDataSource() {
         try {
             return DataSourceBuilder.create().build();
-        } catch (Exception e) {
-            logger.severe("Secondary 데이터 소스 생성 중 오류 발생: " + e.getMessage());
-            throw new RuntimeException("Secondary 데이터 소스를 생성할 수 없습니다.", e);
+        } catch (IllegalArgumentException e) {
+            logger.severe("Secondary 데이터 소스 설정 오류");
+            throw new DataSourceConfigurationException("Secondary 데이터 소스 설정 오류", e);
+        } catch (RuntimeException e) {
+            logger.severe("Secondary 데이터 소스 생성 중 예상치 못한 오류");
+            throw new DataSourceConfigurationException("Secondary 데이터 소스 생성 중 예상치 못한 오류", e);
         }
     }
 
@@ -72,9 +75,12 @@ public class SecondaryDataSourceConfig {
                     .packages("org.neighbor21.slkaFixedEquipDBDB.entity.secondary")
                     .persistenceUnit("secondary")
                     .build();
-        } catch (Exception e) {
-            logger.severe("Secondary EntityManagerFactory 생성 중 오류 발생: " + e.getMessage());
-            throw new RuntimeException("Secondary EntityManagerFactory를 생성할 수 없습니다.", e);
+        } catch (IllegalArgumentException e) {
+            logger.severe("Secondary EntityManagerFactory 설정 오류");
+            throw new EntityManagerFactoryConfigurationException("Secondary EntityManagerFactory 설정 오류", e);
+        } catch (RuntimeException e) {
+            logger.severe("Secondary EntityManagerFactory 생성 중 예상치 못한 오류");
+            throw new EntityManagerFactoryConfigurationException("Secondary EntityManagerFactory 생성 중 예상치 못한 오류", e);
         }
     }
 
@@ -91,9 +97,32 @@ public class SecondaryDataSourceConfig {
             JpaTransactionManager transactionManager = new JpaTransactionManager();
             transactionManager.setEntityManagerFactory(secondaryEntityManagerFactory.getObject());
             return transactionManager;
-        } catch (Exception e) {
-            logger.severe("Secondary 트랜잭션 관리자 생성 중 오류 발생: " + e.getMessage());
-            throw new RuntimeException("Secondary 트랜잭션 관리자를 생성할 수 없습니다.", e);
+        } catch (IllegalArgumentException e) {
+            logger.severe("Secondary 트랜잭션 관리자 설정 오류");
+            throw new TransactionManagerConfigurationException("Secondary 트랜잭션 관리자 설정 오류", e);
+        } catch (RuntimeException e) {
+            logger.severe("Secondary 트랜잭션 관리자 생성 중 예상치 못한 오류");
+            throw new TransactionManagerConfigurationException("Secondary 트랜잭션 관리자 생성 중 예상치 못한 오류", e);
         }
     }
+
+    // 사용자 정의 예외 클래스들
+    public static class DataSourceConfigurationException extends RuntimeException {
+        public DataSourceConfigurationException(String message, Throwable cause) {
+            super(message, cause);
+        }
+    }
+
+    public static class EntityManagerFactoryConfigurationException extends RuntimeException {
+        public EntityManagerFactoryConfigurationException(String message, Throwable cause) {
+            super(message, cause);
+        }
+    }
+
+    public static class TransactionManagerConfigurationException extends RuntimeException {
+        public TransactionManagerConfigurationException(String message, Throwable cause) {
+            super(message, cause);
+        }
+    }
+
 }
