@@ -7,9 +7,12 @@ import org.neighbor21.slkaFixedEquipDBDB.config.Constants;
 import org.neighbor21.slkaFixedEquipDBDB.dto.TL_VDS_PASSDto;
 import org.neighbor21.slkaFixedEquipDBDB.dto.TL_VDS_PASSKeyDto;
 import org.neighbor21.slkaFixedEquipDBDB.entity.compositekey.TL_VDS_PASSKey;
+import org.neighbor21.slkaFixedEquipDBDB.entity.compositekey.TC_VDS_PASSKey;
 import org.neighbor21.slkaFixedEquipDBDB.entity.primary.Tms_Tracking;
 import org.neighbor21.slkaFixedEquipDBDB.entity.secondary.TL_VDS_PASS;
+import org.neighbor21.slkaFixedEquipDBDB.entity.secondary.TC_VDS_PASS;
 import org.neighbor21.slkaFixedEquipDBDB.jpareposit.secondaryRepo.TlVdsPassReposit;
+import org.neighbor21.slkaFixedEquipDBDB.jpareposit.secondaryRepo.TcVdsPassReposit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,28 +33,31 @@ import java.util.List;
  * fileName       : DataTransferService.java
  * author         : kjg08
  * date           : 2024-04-08
- * description    : Primary 테이블에서 Secondary 테이블로 데이터를 옮기기 위해 타입 변환 및 파싱 후 적재하는 로직을 담당하는 서비스 클래스.
+ * description    : Primary 테이블에서 Secondary 테이블(TL_VDS_PASS 및 TC_VDS_PASS)로 데이터를 옮기기 위해 타입 변환 및 파싱 후 적재하는 로직을 담당하는 서비스 클래스.
  * ===========================================================
  * DATE              AUTHOR             NOTE
  * -----------------------------------------------------------
  * 2024-04-08        kjg08           최초 생성
+ * 2024-05-XX        kjg08           TC_VDS_PASS 테이블 처리 로직 추가
  */
 @Service
 public class DataTransferService {
     private static final Logger logger = LoggerFactory.getLogger(DataTransferService.class);
     private static final Logger retryLogger = LoggerFactory.getLogger("RetryLogger");
     private final BatchService batchService;
+    private final TcVdsPassReposit tcVdsPassReposit;
 
     @PersistenceContext(unitName = "secondary") // 특정 영속성 유닛을 사용하는 EntityManager 주입
     private EntityManager secondaryEntityManager;
 
     @Autowired // 필요한 의존 객체를 주입받음
-    public DataTransferService(BatchService batchService, TlVdsPassReposit tlVdsPassReposit) {
+    public DataTransferService(BatchService batchService, TlVdsPassReposit tlVdsPassReposit, TcVdsPassReposit tcVdsPassReposit) {
         this.batchService = batchService;
+        this.tcVdsPassReposit = tcVdsPassReposit;
     }
 
     /**
-     * 데이터를 Primary 테이블에서 Secondary 테이블로 전송
+     * 데이터를 Primary 테이블에서 Secondary 테이블(TL_VDS_PASS 및 TC_VDS_PASS)로 전송
      *
      * @param newDataList Primary 테이블에서 가져온 데이터 리스트
      * @return 전송 성공 여부
@@ -64,8 +70,13 @@ public class DataTransferService {
         int lastLoggedPercentage = 0;
         int batchSize = Constants.DEFAULT_BATCH_SIZE; // 배치 크기 설정;
 
-        List<TL_VDS_PASS> batchList = new ArrayList<>();
+        List<TL_VDS_PASS> tlBatchList = new ArrayList<>();
+        List<TC_VDS_PASS> tcBatchList = new ArrayList<>();
         boolean transferSuccessful = true; // 데이터 전송 성공 여부
+
+        // TC_VDS_PASS 테이블 초기화
+        tcVdsPassReposit.deleteAll();
+        logger.info("TC_VDS_PASS table has been cleared.");
 
         // 시간 측정 변수 초기화
         long totalConversionTime = 0;
@@ -85,16 +96,20 @@ public class DataTransferService {
                 // 엔티티를 DTO로 변환
                 long conversionStartTime = System.currentTimeMillis();
                 TL_VDS_PASSDto dto = convertEntityToDTO(sourceData);
-                TL_VDS_PASS targetData = convertDtoToEntity(dto);
-                batchList.add(targetData);
+                TL_VDS_PASS tlTargetData = convertDtoToTlEntity(dto);
+                TC_VDS_PASS tcTargetData = convertDtoToTcEntity(dto);
+                tlBatchList.add(tlTargetData);
+                tcBatchList.add(tcTargetData);
                 long conversionEndTime = System.currentTimeMillis();
                 totalConversionTime += (conversionEndTime - conversionStartTime);
 
                 // 배치 크기에 도달하면 배치 삽입 수행
-                if (batchList.size() == batchSize) {
+                if (tlBatchList.size() == batchSize) {
                     long batchInsertStartTime = System.currentTimeMillis();
-                    batchService.batchInsertWithRetry(batchList);
-                    batchList.clear();
+                    batchService.batchInsertWithRetry(tlBatchList, TL_VDS_PASS.class);
+                    batchService.batchInsertWithRetry(tcBatchList, TC_VDS_PASS.class);
+                    tlBatchList.clear();
+                    tcBatchList.clear();
                     long batchInsertEndTime = System.currentTimeMillis();
                     totalBatchInsertTime += (batchInsertEndTime - batchInsertStartTime);
                 }
@@ -136,9 +151,10 @@ public class DataTransferService {
         }
 
         // 남은 데이터 처리
-        if (!batchList.isEmpty()) {
+        if (!tlBatchList.isEmpty()) {
             long batchInsertStartTime = System.currentTimeMillis();
-            batchService.batchInsertWithRetry(batchList);
+            batchService.batchInsertWithRetry(tlBatchList, TL_VDS_PASS.class);
+            batchService.batchInsertWithRetry(tcBatchList, TC_VDS_PASS.class);
             long batchInsertEndTime = System.currentTimeMillis();
             totalBatchInsertTime += (batchInsertEndTime - batchInsertStartTime);
         }
@@ -188,8 +204,10 @@ public class DataTransferService {
 
         try {
             TL_VDS_PASSDto dto = convertEntityToDTO(failedData);
-            TL_VDS_PASS data = convertDtoToEntity(dto);
-            batchService.batchInsertWithRetry(List.of(data));
+            TL_VDS_PASS tlData = convertDtoToTlEntity(dto);
+            TC_VDS_PASS tcData = convertDtoToTcEntity(dto);
+            batchService.batchInsertWithRetry(List.of(tlData), TL_VDS_PASS.class);
+            batchService.batchInsertWithRetry(List.of(tcData), TC_VDS_PASS.class);
             retryLogger.info("Retry successful for tracking PK {}", failedData.getTmsTrackingPK());
             return true;
         } catch (DataIntegrityViolationException e) {
@@ -230,12 +248,12 @@ public class DataTransferService {
     }
 
     /**
-     * DTO를 엔티티로 변환
+     * DTO를 TL_VDS_PASS 엔티티로 변환
      *
      * @param dto 변환할 DTO
-     * @return 변환된 엔티티
+     * @return 변환된 TL_VDS_PASS 엔티티
      */
-    private TL_VDS_PASS convertDtoToEntity(TL_VDS_PASSDto dto) {
+    private TL_VDS_PASS convertDtoToTlEntity(TL_VDS_PASSDto dto) {
         TL_VDS_PASS entity = new TL_VDS_PASS();
         TL_VDS_PASSKey key = new TL_VDS_PASSKey();
         key.setPASS_DT(dto.getTlVdsPassPK().getPASS_DT());
@@ -255,4 +273,29 @@ public class DataTransferService {
         return entity;
     }
 
+    /**
+     * DTO를 TC_VDS_PASS 엔티티로 변환
+     *
+     * @param dto 변환할 DTO
+     * @return 변환된 TC_VDS_PASS 엔티티
+     */
+    private TC_VDS_PASS convertDtoToTcEntity(TL_VDS_PASSDto dto) {
+        TC_VDS_PASS entity = new TC_VDS_PASS();
+        TC_VDS_PASSKey key = new TC_VDS_PASSKey();
+        key.setPASS_DT(dto.getTlVdsPassPK().getPASS_DT());
+        key.setCAMERA_ID(dto.getTlVdsPassPK().getCAMERA_ID());
+        key.setPASSVHCL_ID(dto.getTlVdsPassPK().getPASSVHCL_ID());
+        entity.setTcVdsPassPK(key);
+        entity.setINSTLLC_NM(dto.getINSTLLC_NM());
+        entity.setVHCL_CLSF(dto.getVHCL_CLSF());
+        entity.setVHCL_CLSFNM(dto.getVHCL_CLSFNM());
+        entity.setVHCL_CLSFGRP(dto.getVHCL_CLSFGRP());
+        entity.setRGSPH_ID(dto.getRGSPH_ID());
+        entity.setRGSPH_NM(dto.getRGSPH_NM());
+        entity.setSPEED(dto.getSPEED());
+        entity.setEVNT_CD(dto.getEVNT_CD());
+        entity.setEVNT_NM(dto.getEVNT_NM());
+        entity.setCLCT_DT(Timestamp.valueOf(LocalDateTime.now())); // 수집일시로 현재 시간을 설정
+        return entity;
+    }
 }
