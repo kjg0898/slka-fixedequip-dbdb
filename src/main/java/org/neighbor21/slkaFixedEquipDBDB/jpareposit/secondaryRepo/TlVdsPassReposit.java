@@ -26,13 +26,13 @@ import java.util.Set;
 @Repository
 public interface TlVdsPassReposit extends JpaRepository<TL_VDS_PASS, TL_VDS_PASSKey> {
 
-    /**
-     * 주어진 키 세트에 해당하는 존재하는 키들을 조회하는 메소드.
-     *
-     * @param keys 조회할 키 세트
-     * @return 존재하는 키 세트
-     * jpql
-     */
-    @Query("SELECT t.tlVdsPassPK FROM TL_VDS_PASS t WHERE t.tlVdsPassPK IN :keys")
-    Set<TL_VDS_PASSKey> findExistingKeys(@Param("keys") Set<TL_VDS_PASSKey> keys);
+//    /**
+//     * 주어진 키 세트에 해당하는 존재하는 키들을 조회하는 메소드.
+//     *
+//     * @param keys 조회할 키 세트
+//     * @return 존재하는 키 세트
+//     * jpql
+//     */
+//    @Query("SELECT t.tlVdsPassPK FROM TL_VDS_PASS t WHERE t.tlVdsPassPK IN :keys")
+//    Set<TL_VDS_PASSKey> findExistingKeys(@Param("keys") Set<TL_VDS_PASSKey> keys);
 }

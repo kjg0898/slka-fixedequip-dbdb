@@ -28,9 +28,9 @@ import java.time.LocalDateTime;
 @Repository
 public interface TcVdsPassReposit extends JpaRepository<TC_VDS_PASS, TC_VDS_PASSKey> {
 
-    @Modifying
-    @Transactional
-    @Query("DELETE FROM TC_VDS_PASS t WHERE t.tcVdsPassPK.PASS_DT < :oneHourAgo")
-    void deleteDataOlderThanOneHour(LocalDateTime oneHourAgo);
+//    @Modifying
+//    @Transactional
+//    @Query("DELETE FROM TC_VDS_PASS t WHERE t.tcVdsPassPK.PASS_DT < :oneHourAgo")
+//    void deleteDataOlderThanOneHour(LocalDateTime oneHourAgo);
 
 }
