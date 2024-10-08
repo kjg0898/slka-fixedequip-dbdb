@@ -25,6 +25,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -74,9 +75,8 @@ public class DataTransferService {
         List<TC_VDS_PASS> tcBatchList = new ArrayList<>();
         boolean transferSuccessful = true; // 데이터 전송 성공 여부
 
-        // TC_VDS_PASS 테이블 초기화
-        tcVdsPassReposit.deleteAll();
-        logger.info("TC_VDS_PASS table has been cleared.");
+        // TC_VDS_PASS 테이블에서 24시간 이전의 데이터 삭제 (별도 트랜잭션)
+        deleteOldData();
 
         // 시간 측정 변수 초기화
         long totalConversionTime = 0;
@@ -172,6 +172,14 @@ public class DataTransferService {
 
         return transferSuccessful; // 데이터 전송 성공 여부 반환
     }
+
+    protected void deleteOldData() {
+        LocalDateTime oneDayAgo = LocalDateTime.now().minus(24, ChronoUnit.HOURS).truncatedTo(ChronoUnit.HOURS);
+        int deletedCount = tcVdsPassReposit.deleteDataOlderThanOneDay(oneDayAgo);
+        logger.info("Deleted {} records older than 24 hours from TC_VDS_PASS table", deletedCount);
+        // 이 메서드가 종료되면 트랜잭션이 커밋됩니다.
+    }
+
 
     /**
      * 데이터를 유효성 검사
