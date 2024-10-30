@@ -1,16 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <configuration>
-
+    <include resource="org/springframework/boot/logging/logback/base.xml" />
     <property name="LOG_PATTERN" value="%d{yyyy-MM-dd HH:mm:ss} %-5level [%thread] %logger{36}.%M:%L - %msg%n"/>
     <property name="LOG_DIR" value="/was/fixedEquip"/>
     <property name="MAX_FILE_SIZE" value="5MB"/>
 
-    <!-- 콘솔에 출력되는 로그의 형식을 정의하는 패턴 -->
-    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
-        <encoder>
-            <pattern>${LOG_PATTERN}</pattern>
-        </encoder>
-    </appender>
+
 
     <!-- 파일에 출력되는 로그의 형식을 정의하는 패턴 및 파일 경로 설정 -->
     <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
@@ -33,7 +28,6 @@
 
     <!-- 어플리케이션의 기본 로그 레벨과 appender 설정 -->
     <root level="info">
-        <appender-ref ref="STDOUT"/>
         <!-- 파일 로깅은 환경 변수에 따라 활성화 -->
         <appender-ref ref="FILE" condition="on ${LOG_TO_FILE:true}"/>
     </root>

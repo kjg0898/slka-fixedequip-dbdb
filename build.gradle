@@ -47,9 +47,6 @@ dependencies {
     // postgresql
     runtimeOnly 'org.postgresql:postgresql:42.7.2'
 
-    //  Logback 구현체 추가
-    implementation 'ch.qos.logback:logback-classic:1.4.14'
-
     //Resilience4j (지수 백오프)(재시도 할때 사용)
     implementation 'io.github.resilience4j:resilience4j-core:1.7.0'
     implementation 'io.github.resilience4j:resilience4j-retry:1.7.0'
